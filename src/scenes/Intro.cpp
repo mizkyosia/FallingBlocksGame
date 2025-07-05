@@ -6,10 +6,14 @@
 
 namespace Scenes
 {
-    Intro::Intro(SceneManager &sceneManager, sf::RenderWindow &renderWindow) : Scene(sceneManager, renderWindow, 1),
-                                                                               m_button()
+    Intro::Intro(SceneManager &sceneManager, sf::RenderWindow &renderWindow) : Scene(sceneManager, renderWindow, 1) {}
+
+    void Intro::setup()
     {
         GlobalResources &res = GlobalResources::getInstance();
+
+        // Load texture
+        m_tex.loadFromFile("assets/images/teto.png");
 
         auto size = m_window.getSize();
         auto position = sf::Vector2f(size.x / 2, size.y / 2);
@@ -31,9 +35,6 @@ namespace Scenes
             // Apply shader to button
             m_button.setShader(&res.buttonShader);
         }
-
-        // Do not forget !!!
-        m_ready = true;
     }
 
     void Intro::draw()
@@ -54,6 +55,9 @@ namespace Scenes
 
     void Intro::update(const sf::Time &deltaTime)
     {
-        if(m_button.clicked()) m_next = m_manager.init<Scenes::Game>();
+        // if (m_button.clicked())
+        //     m_next = m_manager.init<Scenes::Game>();
+
+        m_button.shape().rotate(sf::degrees(deltaTime.asSeconds() * 90.0f));
     }
 }

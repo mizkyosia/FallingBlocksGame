@@ -13,6 +13,7 @@ namespace Scenes
         Game(SceneManager &sceneManager, sf::RenderWindow &renderWindow);
         ~Game() = default;
 
+        void setup() override;
         void draw() override;
         void handleEvent(const sf::Event &event) override;
         void update(const sf::Time &deltaTime) override;

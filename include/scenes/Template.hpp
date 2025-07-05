@@ -14,6 +14,7 @@ namespace Scenes
         Template(SceneManager &sceneManager, sf::RenderWindow &renderWindow);
         ~Template() = default;
 
+        void setup() override;
         void draw() override;
         void handleEvent(const sf::Event &event) override;
         void update(const sf::Time &deltaTime) override;

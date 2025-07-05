@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+#include <atomic>
+#include <future>
 #include <SFML/Graphics.hpp>
 
 class SceneManager;
@@ -10,6 +12,33 @@ class SceneManager;
  */
 class Scene
 {
+private:
+    /// Declare SceneManager as friend so it gains access to private methods
+    friend class SceneManager;
+
+    /**
+     * Is the scene ready for display ?
+     * Using an atomic boolean because the ready state may be read from multiple threads
+     */
+    std::atomic_bool m_ready;
+
+    /**
+     * The thread loading the assets of the scene
+     */
+    std::future<void> m_future;
+
+    /**
+     * Must be called right after creating the scene
+     */
+    void init()
+    {
+        // Launch the resource loading thread
+        m_future = std::async(std::launch::async, [&]
+                              {
+                                setup();
+                                m_ready = true; });
+    }
+
 protected:
     /**
      * Keep a reference to the parent manager
@@ -21,10 +50,6 @@ protected:
      */
     sf::RenderWindow &m_window;
 
-    /**
-     * Is the scene ready for display ?
-     */
-    bool m_ready;
     /**
      * Is the scene currently displayed ?
      */
@@ -48,6 +73,11 @@ public:
      */
     Scene(SceneManager &manager, sf::RenderWindow &window, unsigned short sceneLayers = 1) : m_manager(manager), m_window(window), m_ready(false), m_paused(true), m_sceneLayers(sceneLayers) {};
     virtual ~Scene() {};
+
+    /**
+     * Setups the scene. All heavy setup operations should be done in this function, such as loading large textures, models and other assets.
+     */
+    virtual void setup() = 0;
 
     /**
      * Handles a given event. Called for each event, before updating

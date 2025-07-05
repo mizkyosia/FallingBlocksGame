@@ -1,7 +1,8 @@
+#pragma once
 #include <vector>
 #include <SFML/Graphics.hpp>
-
-class Scene;
+#include <future>
+#include <Scene.hpp>
 
 class SceneManager
 {
@@ -11,6 +12,11 @@ private:
      * We do not use a stack for iteration purposes
      */
     std::vector<std::unique_ptr<Scene>> m_scenes;
+
+    /**
+     * Mutex protecting access to the scenes vector
+     */
+    std::mutex m_scenesMutex;
 
     /**
      * Keep a reference to the render window
@@ -44,7 +50,7 @@ public:
         requires(std::derived_from<TScene, Scene>)
     void run()
     {
-        auto startScene = init<TScene>();
+        auto startScene = std::make_unique<TScene>(*this, m_window);
 
         m_scenes.push_back(std::move(startScene));
     };
@@ -57,7 +63,7 @@ public:
     /**
      * Updates the currently active scenes
      */
-    void update(sf::Time& deltaTime);
+    void update(sf::Time &deltaTime);
 
     /**
      * Draws the scenes
@@ -70,14 +76,36 @@ public:
     void previousScene();
 
     /**
-     * Initializes a new scene from given class, then returns it
+     * Initializes a new scene from given class, then pushes it onto the stack and pauses the previous scenes
      */
     template <typename TScene>
         requires(std::derived_from<TScene, Scene>)
-    std::unique_ptr<TScene> init()
+    void requestBuild(Scene *parentScene)
     {
-        auto newScenePtr = std::make_unique<TScene>(*this, m_window);
+        std::async(std::launch::async,
+                   [&]
+                   {
+                       // Create our new scene (this is where all the heavy work will be done)
+                       std::unique_ptr<TScene> newScenePtr = std::make_unique<TScene>(*this, m_window);
 
-        return newScenePtr;
+                        // Scoping shenanigans for locking
+                       {
+                           // Now that our scene is built, lock the necessary resources to add it into our game
+                           std::lock_guard<std::mutex> guard(m_scenesMutex);
+
+                           // Fetch its scene layers
+                           auto nextSceneLayers = newScenePtr->sceneLayers();
+
+                           // Erase any scenes on the same layer(s), pause all others
+                           m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scene> &p)
+                                                         { p->pause();
+                                                            return p->sceneLayers() & nextSceneLayers; }));
+
+                           // Resume the new scene & add it onto the stack
+                           newScenePtr->resume();
+                           m_scenes.push_back(std::move(newScenePtr));
+                       }
+                       // The lock guard is now destroyed, scenes can be accessed freely by any thread now
+                   });
     }
 };

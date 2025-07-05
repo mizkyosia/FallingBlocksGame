@@ -28,12 +28,7 @@ void SceneManager::changeScene()
         // Fetch the actual next scene
         auto newScene = m_scenes.back()->next();
 
-        // Fetch its scene layers
-        auto nextSceneLayers = newScene->sceneLayers();
-
-        // And erase any scenes on the same layer(s)
-        m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scene> const &p)
-                                      { return p->sceneLayers() & nextSceneLayers; }));
+        
 
         // Then pause the scene currently on top, if any remain
         if (!m_scenes.empty())

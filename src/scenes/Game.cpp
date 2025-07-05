@@ -1,10 +1,13 @@
 #include <scenes/Game.hpp>
+#include <thread>
 #include <GlobalResources.hpp>
 
 namespace Scenes
 {
     Game::Game(SceneManager &sceneManager, sf::RenderWindow &renderWindow) : Scene(sceneManager, renderWindow, 1),
-                                                                             m_text(GlobalResources::getInstance().uiFont)
+                                                                             m_text(GlobalResources::getInstance().uiFont) {};
+
+    void Game::setup()
     {
         m_text.setString("J'ai perdu au jeu");
 
@@ -14,8 +17,7 @@ namespace Scenes
         auto windowSize = m_window.getSize();
         m_text.setPosition(sf::Vector2f(windowSize.x / 2.f, windowSize.y / 2.f));
 
-        // Do not forget !!!
-        m_ready = true;
+        std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 
     void Game::draw()
