@@ -1,14 +1,15 @@
 #include <scenes/Game.hpp>
 #include <thread>
 #include <GlobalResources.hpp>
+#include <iostream>
 
 namespace Scenes
 {
     Game::Game(SceneManager &sceneManager, sf::RenderWindow &renderWindow) : Scene(sceneManager, renderWindow, 1),
-                                                                             m_text(GlobalResources::getInstance().uiFont) {};
-
-    void Game::setup()
+                                                                             m_text(GlobalResources::getInstance().uiFont)
     {
+        std::cout << "beginning loading" << std::endl;
+
         m_text.setString("J'ai perdu au jeu");
 
         auto textSize = m_text.getLocalBounds().size;
@@ -17,7 +18,16 @@ namespace Scenes
         auto windowSize = m_window.getSize();
         m_text.setPosition(sf::Vector2f(windowSize.x / 2.f, windowSize.y / 2.f));
 
-        std::this_thread::sleep_for(std::chrono::seconds(2));
+        // Artifical loading time
+        // std::this_thread::sleep_for(std::chrono::seconds(2));
+
+        // Stress test for loading images
+        for(int i =0; i < 100; i++) {
+            if(i%2) m_texture.loadFromFile("assets/images/teto.png");
+            else m_texture.loadFromFile("assets/images/cat.jpg");
+        }
+
+        // As we can see, they properly load in the background without blocking the main thread
     }
 
     void Game::draw()

@@ -1,19 +1,14 @@
 #include <scenes/Intro.hpp>
-#include <scenes/Game.hpp>
+#include <scenes/Transition.hpp>
 #include <SceneManager.hpp>
 #include <GlobalResources.hpp>
 #include <iostream>
 
 namespace Scenes
 {
-    Intro::Intro(SceneManager &sceneManager, sf::RenderWindow &renderWindow) : Scene(sceneManager, renderWindow, 1) {}
-
-    void Intro::setup()
+    Intro::Intro(SceneManager &sceneManager, sf::RenderWindow &renderWindow) : Scene(sceneManager, renderWindow, 1)
     {
         GlobalResources &res = GlobalResources::getInstance();
-
-        // Load texture
-        m_tex.loadFromFile("assets/images/teto.png");
 
         auto size = m_window.getSize();
         auto position = sf::Vector2f(size.x / 2, size.y / 2);
@@ -55,9 +50,7 @@ namespace Scenes
 
     void Intro::update(const sf::Time &deltaTime)
     {
-        // if (m_button.clicked())
-        //     m_next = m_manager.init<Scenes::Game>();
-
-        m_button.shape().rotate(sf::degrees(deltaTime.asSeconds() * 90.0f));
+        if (m_button.clicked())
+            m_manager.requestBuild<Scenes::Transition>();
     }
 }

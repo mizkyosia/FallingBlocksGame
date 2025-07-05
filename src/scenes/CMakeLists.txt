@@ -1,1 +1,1 @@
-target_sources(FallingBlocks PRIVATE Intro.cpp Game.cpp)
+target_sources(FallingBlocks PRIVATE Intro.cpp Game.cpp Transition.cpp)

@@ -24,6 +24,11 @@ private:
     sf::RenderWindow &m_window;
 
     /**
+     * Variable holding the future to not block the main thread
+     */
+    std::future<void> m_future;
+
+    /**
      * Should the scene manager load the next scene ?
      */
     bool m_next;
@@ -71,41 +76,41 @@ public:
     void draw();
 
     /**
-     * Orders the scene manager to go back to the previous scene
+     * Orders the scene manager to change the active scenes to the following layers. Pauses all other scenes
      */
-    void previousScene();
+    void setActiveLayers(unsigned int layers);
 
     /**
      * Initializes a new scene from given class, then pushes it onto the stack and pauses the previous scenes
      */
     template <typename TScene>
         requires(std::derived_from<TScene, Scene>)
-    void requestBuild(Scene *parentScene)
+    void requestBuild()
     {
-        std::async(std::launch::async,
-                   [&]
-                   {
-                       // Create our new scene (this is where all the heavy work will be done)
-                       std::unique_ptr<TScene> newScenePtr = std::make_unique<TScene>(*this, m_window);
+        m_future = std::async(std::launch::async,
+                              [&]
+                              {
+                                  // Create our new scene (this is where all the heavy work will be done)
+                                  std::unique_ptr<TScene> newScenePtr = std::make_unique<TScene>(*this, m_window);
 
-                        // Scoping shenanigans for locking
-                       {
-                           // Now that our scene is built, lock the necessary resources to add it into our game
-                           std::lock_guard<std::mutex> guard(m_scenesMutex);
+                                  // Scoping shenanigans for locking
+                                  {
+                                      // Now that our scene is built, lock the necessary resources to add it into our game
+                                      std::lock_guard<std::mutex> guard(m_scenesMutex);
 
-                           // Fetch its scene layers
-                           auto nextSceneLayers = newScenePtr->sceneLayers();
+                                      // Fetch its scene layers
+                                      auto nextSceneLayers = newScenePtr->sceneLayers();
 
-                           // Erase any scenes on the same layer(s), pause all others
-                           m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scene> &p)
-                                                         { p->pause();
+                                      // Erase any scenes on the same layer(s), pause all others
+                                      m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scene> &p)
+                                                                    { p->pause();
                                                             return p->sceneLayers() & nextSceneLayers; }));
 
-                           // Resume the new scene & add it onto the stack
-                           newScenePtr->resume();
-                           m_scenes.push_back(std::move(newScenePtr));
-                       }
-                       // The lock guard is now destroyed, scenes can be accessed freely by any thread now
-                   });
+                                      // Resume the new scene & add it onto the stack
+                                      newScenePtr->resume();
+                                      m_scenes.push_back(std::move(newScenePtr));
+                                  }
+                                  // The lock guard is now destroyed, scenes can be accessed freely by any thread now
+                              });
     }
 };

@@ -16,29 +16,6 @@ private:
     /// Declare SceneManager as friend so it gains access to private methods
     friend class SceneManager;
 
-    /**
-     * Is the scene ready for display ?
-     * Using an atomic boolean because the ready state may be read from multiple threads
-     */
-    std::atomic_bool m_ready;
-
-    /**
-     * The thread loading the assets of the scene
-     */
-    std::future<void> m_future;
-
-    /**
-     * Must be called right after creating the scene
-     */
-    void init()
-    {
-        // Launch the resource loading thread
-        m_future = std::async(std::launch::async, [&]
-                              {
-                                setup();
-                                m_ready = true; });
-    }
-
 protected:
     /**
      * Keep a reference to the parent manager
@@ -61,23 +38,14 @@ protected:
      */
     unsigned short m_sceneLayers;
 
-    /**
-     * The next scene to be displayed, spawned by this one
-     */
-    std::unique_ptr<Scene> m_next;
-
 public:
     /**
      * Creates a new scene
      * Do not forget to put "loaded = true;" at the end of the derived class' constructor to validate the scene's display
      */
-    Scene(SceneManager &manager, sf::RenderWindow &window, unsigned short sceneLayers = 1) : m_manager(manager), m_window(window), m_ready(false), m_paused(true), m_sceneLayers(sceneLayers) {};
-    virtual ~Scene() {};
+    Scene(SceneManager &manager, sf::RenderWindow &window, unsigned short sceneLayers = 1) : m_manager(manager), m_window(window), m_paused(true), m_sceneLayers(sceneLayers) {};
+    virtual ~Scene() = default;
 
-    /**
-     * Setups the scene. All heavy setup operations should be done in this function, such as loading large textures, models and other assets.
-     */
-    virtual void setup() = 0;
 
     /**
      * Handles a given event. Called for each event, before updating
@@ -96,18 +64,8 @@ public:
 
     // ================== GETTERS ==================
 
-    bool ready() const { return m_ready; }
     bool paused() const { return m_paused; }
     unsigned short sceneLayers() const { return m_sceneLayers; }
-    /**
-     * Gets the unique pointer to the next scene
-     * \warning This moves the unique pointer !
-     */
-    [[nodiscard]] std::unique_ptr<Scene> next() { return std::move(m_next); }
-    /**
-     * Is the next scene ready to be displayed ?
-     */
-    bool nextReady() const { return m_next != nullptr && m_next->ready(); }
 
     // ================== SETTERS ==================
 

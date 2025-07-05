@@ -21,23 +21,6 @@ void SceneManager::changeScene()
 
         m_previous = false;
     }
-
-    // Fetch the next scene's ready state
-    if (!m_scenes.empty() && m_scenes.back()->nextReady())
-    {
-        // Fetch the actual next scene
-        auto newScene = m_scenes.back()->next();
-
-        
-
-        // Then pause the scene currently on top, if any remain
-        if (!m_scenes.empty())
-            m_scenes.back()->pause();
-
-        // And resume & add the new one
-        newScene->resume();
-        m_scenes.push_back(std::move(newScene));
-    }
 }
 
 void SceneManager::handleEvent(const sf::Event &event)
@@ -59,13 +42,19 @@ void SceneManager::update(sf::Time &deltaTime)
     m_scenes.back()->update(deltaTime);
 }
 
+void SceneManager::setActiveLayers(unsigned int layers)
+{
+    for (auto &scene : m_scenes)
+    {
+        if (scene->sceneLayers() & layers)
+            scene->resume();
+        else
+            scene->pause();
+    }
+}
+
 void SceneManager::draw()
 {
     for (auto &scene : m_scenes)
         scene->draw();
-}
-
-void SceneManager::previousScene()
-{
-    m_previous = true;
 }
