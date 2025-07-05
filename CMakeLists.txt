@@ -30,5 +30,5 @@ target_link_libraries(SFMLTest SFML::Graphics)
 # Link our header files
 target_include_directories(SFMLTest PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
-# Copy assets into build directory
-file(COPY assets DESTINATION ${CMAKE_BINARY_DIR}/bin)
+# Create a symlink to the actual assets directory instead of copying them
+add_custom_target(link_assets_target ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/bin/assets)
