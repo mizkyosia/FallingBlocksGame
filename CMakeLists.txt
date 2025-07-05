@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Declare our project
-project(SFMLTest CXX)
+project(FallingBlocks CXX)
 
 # CMake settings
 set(CMAKE_CXX_STANDARD 23)
@@ -21,14 +21,14 @@ FetchContent_Declare(SFML
 FetchContent_MakeAvailable(SFML)
 
 # Add our executable
-add_executable(SFMLTest main.cpp)
+add_executable(FallingBlocks main.cpp)
 add_subdirectory(src)
 
 # Link executable & SFML
-target_link_libraries(SFMLTest SFML::Graphics)
+target_link_libraries(FallingBlocks SFML::Graphics)
 
 # Link our header files
-target_include_directories(SFMLTest PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(FallingBlocks PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 # Create a symlink to the actual assets directory instead of copying them
 add_custom_target(link_assets_target ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/bin/assets)
