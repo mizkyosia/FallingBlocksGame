@@ -30,5 +30,19 @@ target_link_libraries(FallingBlocks SFML::Graphics)
 # Link our header files
 target_include_directories(FallingBlocks PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
-# Create a symlink to the actual assets directory instead of copying them
-add_custom_target(link_assets_target ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR}/bin/assets)
+# Define our assets folder, and assets folder "copy" (actually a link)
+set(assetsDir "${CMAKE_SOURCE_DIR}/assets")
+set(assetsCopy "${CMAKE_BINARY_DIR}/bin/assets")
+
+
+# Now we have to link our assets, but copying them wouldn't be extremely convenient
+if(UNIX)
+    # Create a symlink to the actual assets directory
+    add_custom_target(link_assets_target ALL COMMAND ${CMAKE_COMMAND} -E create_symlink ${assetsDir} ${assetsCopy})
+else()
+    # Convert to Windows path (with backslashes)
+    file(TO_NATIVE_PATH assetsCopy winAssetsCopy)
+    file(TO_NATIVE_PATH assetsDir winAssetsDir)
+    # Do a directory junction (requires no access privileges) because Windows is fucking annoying
+    execute_process(COMMAND cmd.exe /c mklink /J ${winAssetsCopy} ${winAssetsDir})
+endif()
