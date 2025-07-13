@@ -25,7 +25,7 @@ add_executable(FallingBlocks main.cpp)
 add_subdirectory(src)
 
 # Link executable & SFML
-target_link_libraries(FallingBlocks SFML::Graphics)
+target_link_libraries(FallingBlocks SFML::Graphics SFML::Audio)
 
 # Link our header files
 target_include_directories(FallingBlocks PRIVATE ${PROJECT_SOURCE_DIR}/include)

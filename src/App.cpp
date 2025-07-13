@@ -4,7 +4,7 @@
 #include <iostream>
 
 App::App() : m_window(sf::VideoMode({1920u, 1080u}), "Test project", sf::State::Windowed),
-             m_sceneManager(m_window)
+             m_sceneManager(m_window), m_assetsManager()
 {
 }
 

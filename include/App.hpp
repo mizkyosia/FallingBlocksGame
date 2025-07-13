@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <managers/SceneManager.hpp>
+#include <managers/AssetsManager.hpp>
 
 class App
 {
@@ -24,6 +25,8 @@ private:
      * Scene manager
      */
     SceneManager m_sceneManager;
+
+    AssetsManager m_assetsManager;
 
     void loop();
 
