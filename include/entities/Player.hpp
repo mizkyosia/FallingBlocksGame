@@ -28,7 +28,7 @@ namespace Entities
         float m_timeCoyote, m_timeBuffer;
 
     public:
-        static const float Gravity = 9.81f,
+        static constexpr float Gravity = 9.81f,
                            AirFriction = .5f,
                            GroundFriction = 5.f;
 

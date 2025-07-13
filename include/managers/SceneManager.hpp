@@ -2,7 +2,7 @@
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include <future>
-#include <Scene.hpp>
+#include <scenes/Scene.hpp>
 
 class SceneManager
 {
@@ -11,7 +11,7 @@ private:
      * Vector containing all scenes currently defined in the game
      * We do not use a stack for iteration purposes
      */
-    std::vector<std::unique_ptr<Scene>> m_scenes;
+    std::vector<std::unique_ptr<Scenes::Scene>> m_scenes;
 
     /**
      * Mutex protecting access to the scenes vector
@@ -52,7 +52,7 @@ public:
      * Used to initialize the first scene of the application
      */
     template <typename TScene>
-        requires(std::derived_from<TScene, Scene>)
+        requires(std::derived_from<TScene, Scenes::Scene>)
     void run()
     {
         auto startScene = std::make_unique<TScene>(*this, m_window);
@@ -84,7 +84,7 @@ public:
      * Initializes a new scene from given class, then pushes it onto the stack and pauses the previous scenes
      */
     template <typename TScene>
-        requires(std::derived_from<TScene, Scene>)
+        requires(std::derived_from<TScene, Scenes::Scene>)
     void requestBuild()
     {
         m_future = std::async(std::launch::async,
@@ -102,7 +102,7 @@ public:
                                       auto nextSceneLayers = newScenePtr->sceneLayers();
 
                                       // Erase any scenes on the same layer(s), pause all others
-                                      m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scene> &p)
+                                      m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scenes::Scene> &p)
                                                                     { p->pause();
                                                             return p->sceneLayers() & nextSceneLayers; }));
 

@@ -1,5 +1,5 @@
 #pragma once
-#include <Scene.hpp>
+#include <scenes/Scene.hpp>
 #include <SFML/Audio.hpp>
 
 namespace Scenes

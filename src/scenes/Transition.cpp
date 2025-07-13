@@ -1,5 +1,5 @@
 #include <scenes/Transition.hpp>
-#include <SceneManager.hpp>
+#include <managers/SceneManager.hpp>
 
 namespace Scenes
 {

@@ -1,5 +1,5 @@
-#include "SceneManager.hpp"
-#include "Scene.hpp"
+#include <managers/SceneManager.hpp>
+#include <scenes/Scene.hpp>
 #include <algorithm>
 
 SceneManager::SceneManager(sf::RenderWindow &window) : m_window(window), m_next(false), m_previous(false)
@@ -45,7 +45,7 @@ void SceneManager::update(sf::Time &deltaTime)
 void SceneManager::setActiveLayers(unsigned int layers, bool deleteActive)
 {
     // Erase any scenes on the same layer(s), pause all others
-    m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scene> &p)
+    m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scenes::Scene> &p)
                                   { p->pause();
                                                             return deleteActive && !p->paused(); }));
 }

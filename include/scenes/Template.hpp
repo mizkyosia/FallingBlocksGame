@@ -1,7 +1,7 @@
 #pragma once
-#include <Scene.hpp>
+#include <scenes/Scene.hpp>
 #include <SFML/Audio.hpp>
-#include <SceneManager.hpp>
+#include <managers/SceneManager.hpp>
 
 namespace Scenes
 {

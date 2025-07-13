@@ -6,10 +6,11 @@
 #include <filesystem>
 #include <map>
 #include <mutex>
-#include <future>
+#include <functional>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
+#include <SFML/Audio/SoundBuffer.hpp>
 
 class App;
 
@@ -20,10 +21,13 @@ public:
     struct AssetInfo
     {
         std::shared_ptr<T> memory;
-        std::filesystem::path path;
+        std::function<T(void)> instantiator;
     };
 
-    static void loadTexture();
+    static std::shared_ptr<sf::Texture> getTexture(std::filesystem::path path);
+    static std::shared_ptr<sf::SoundBuffer> getSound(std::filesystem::path path);
+    static std::shared_ptr<sf::Font> getFont(std::filesystem::path path);
+    static std::shared_ptr<sf::Shader> getShader(std::filesystem::path path, sf::Shader::Type shaderType);
 
 private:
     friend class App;
@@ -40,16 +44,18 @@ private:
     static std::queue<AssetInfo<sf::Shader>> m_shaderQueue;
     static std::queue<AssetInfo<sf::Font>> m_fontQueue;
 
-    static std::map<std::filesystem::path, sf::Texture> m_textureMap;
-    static std::map<std::filesystem::path, sf::SoundBuffer> m_soundMap;
-    static std::map<std::filesystem::path, sf::Shader> m_shaderMap;
-    static std::map<std::filesystem::path, sf::Font> m_fontMap;
-
+    static std::map<std::filesystem::path, std::shared_ptr<sf::Texture>> m_textureMap;
+    static std::map<std::filesystem::path, std::shared_ptr<sf::SoundBuffer>> m_soundMap;
+    static std::map<std::filesystem::path, std::shared_ptr<sf::Shader>> m_shaderMap;
+    static std::map<std::filesystem::path, std::shared_ptr<sf::Font>> m_fontMap;
 
     void loadAssets();
 
     template <typename T>
     void loadAsset(std::queue<AssetInfo<T>> &assetQueue);
+
+    template <typename T>
+    static std::shared_ptr<T> _getAsset(std::filesystem::path path, std::queue<AssetInfo<T>> &assetQueue, std::map<std::filesystem::path, std::shared_ptr<T>> &assetMap, std::function<T(void)> instantiator);
 };
 
 template <typename T>
@@ -59,7 +65,7 @@ inline void AssetsManager::loadAsset(std::queue<AssetInfo<T>> &assetQueue)
     AssetInfo<T> assetInfo = assetQueue.front();
     assetQueue.pop();
     // Load our asset (does not block since we're in another thread)
-    T temp(texInfo.path);
+    T temp = assetInfo.instantiator();
     // Scoping for locking
     {
         std::lock_guard guard(m_assetsMutex);
@@ -67,4 +73,24 @@ inline void AssetsManager::loadAsset(std::queue<AssetInfo<T>> &assetQueue)
         *assetInfo.memory = std::move(temp);
     }
     // And free the lock !
+}
+
+template <typename T>
+inline std::shared_ptr<T> AssetsManager::_getAsset(std::filesystem::path path, std::queue<AssetInfo<T>> &assetQueue, std::map<std::filesystem::path, std::shared_ptr<T>> &assetMap, std::function<T(void)> instantiator)
+{
+    // If the asset has already been registered, then simply return a reference to it
+    // It may not be loaded yet, though
+    if (assetMap.contains(path))
+        return assetMap[path];
+
+    // Otherwise, create the shared pointer for the asset
+    std::shared_ptr<T> ptr(nullptr);
+
+    // Then queue it
+    assetQueue.push(AssetInfo<T>{
+        .memory = ptr,
+        .instantiator = instantiator});
+
+    // And finally return it !
+    return ptr;
 }

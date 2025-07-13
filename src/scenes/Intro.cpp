@@ -1,6 +1,6 @@
 #include <scenes/Intro.hpp>
 #include <scenes/Transition.hpp>
-#include <SceneManager.hpp>
+#include <managers/SceneManager.hpp>
 #include <GlobalResources.hpp>
 #include <iostream>
 

@@ -1,6 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include <SceneManager.hpp>
+#include <managers/SceneManager.hpp>
 
 class App
 {

@@ -1,5 +1,5 @@
 #pragma once
-#include <Scene.hpp>
+#include <scenes/Scene.hpp>
 #include <gui/Button.hpp>
 
 namespace Scenes
