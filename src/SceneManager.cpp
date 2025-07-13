@@ -42,15 +42,12 @@ void SceneManager::update(sf::Time &deltaTime)
     m_scenes.back()->update(deltaTime);
 }
 
-void SceneManager::setActiveLayers(unsigned int layers)
+void SceneManager::setActiveLayers(unsigned int layers, bool deleteActive)
 {
-    for (auto &scene : m_scenes)
-    {
-        if (scene->sceneLayers() & layers)
-            scene->resume();
-        else
-            scene->pause();
-    }
+    // Erase any scenes on the same layer(s), pause all others
+    m_scenes.erase(std::remove_if(m_scenes.begin(), m_scenes.end(), [&](std::unique_ptr<Scene> &p)
+                                  { p->pause();
+                                                            return deleteActive && !p->paused(); }));
 }
 
 void SceneManager::draw()

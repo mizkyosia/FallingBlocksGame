@@ -76,9 +76,9 @@ public:
     void draw();
 
     /**
-     * Orders the scene manager to change the active scenes to the following layers. Pauses all other scenes
+     * Orders the scene manager to change the active scenes to the following layers. Pauses all the currently active layers, or delete them based on the second argument
      */
-    void setActiveLayers(unsigned int layers);
+    void setActiveLayers(unsigned int layers, bool deleteActive = false);
 
     /**
      * Initializes a new scene from given class, then pushes it onto the stack and pauses the previous scenes

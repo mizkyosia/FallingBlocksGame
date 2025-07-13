@@ -1,0 +1,1 @@
+target_sources(FallingBlocks PRIVATE ResourceManager.cpp)

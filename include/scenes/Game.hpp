@@ -7,9 +7,9 @@ namespace Scenes
     class Game : public Scene
     {
     private:
-        sf::Text m_text;
-
         sf::Texture m_texture{"assets/images/cat.jpg"};
+
+        sf::Sprite m_player{m_texture};
 
     public:
         Game(SceneManager &sceneManager, sf::RenderWindow &renderWindow);
