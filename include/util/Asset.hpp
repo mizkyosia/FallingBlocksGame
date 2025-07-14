@@ -1,5 +1,7 @@
 #pragma once
 #include <bits/shared_ptr.h>
+#include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 
 class AssetsManager;
 
@@ -62,14 +64,20 @@ public:
     /**
      * \brief Assignment operator
      */
-    Asset<_AssetType>& operator=(const Asset<_AssetType>& other) {
+    Asset<_AssetType> &operator=(const Asset<_AssetType> &other)
+    {
         m_handle = other.m_handle;
         m_loaded = other.m_loaded;
         return *this;
-     }
+    }
 
     /**
      * \brief Is the asset ready ?
      */
     bool loaded() const { return *m_loaded; }
 };
+
+using TextureAsset = Asset<sf::Texture>;
+using FontAsset = Asset<sf::Font>;
+using SoundAsset = Asset<sf::SoundBuffer>;
+using ShaderAsset = Asset<sf::Shader>;
