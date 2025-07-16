@@ -7,6 +7,8 @@ namespace Assets
 {
     struct Sound : public Asset<Sound, sf::SoundBuffer>
     {
+        DECLARE_ASSET()
+
         Sound(Path path) : Asset<Sound, sf::SoundBuffer>(path, [=]()
                                                          { return sf::SoundBuffer{path}; }) {};
     };

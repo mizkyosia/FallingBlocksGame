@@ -7,6 +7,7 @@
 
 #ifndef NDEBUG
 #include <iostream>
+#include <boost/core/demangle.hpp>
 #endif
 
 using EntityID = uint32_t;
@@ -28,7 +29,6 @@ public:
     static constexpr ComponentID MaxComponents = 32;
 
 private:
-
     /**
      * \brief Pure virtual class, used for serializing, deserializing & acessing components without worrying about types
      */
@@ -76,7 +76,6 @@ private:
     inline static std::vector<std::shared_ptr<IComponentMap>> s_ComponentMaps;
 
 public:
-
     /** \warning The component manager is a static class and should be treated as such. Do not instantiate it */
     ComponentManager() = delete;
     ComponentManager(ComponentManager &src) = delete;
@@ -144,7 +143,7 @@ inline ComponentManager::ComponentID ComponentManager::Register()
     ComponentID id = s_ComponentMaps.size();
 
 #ifndef NDEBUG
-    std::cout << "Registered component " << typeid(T).name() << " with ComponentType " << (int)id << std::endl;
+    std::cout << "Registered component " << boost::core::demangle(typeid(T).name()) << " with ComponentType " << (int)id << std::endl;
 #endif
 
     // Add the component map
@@ -173,5 +172,5 @@ inline T &ComponentManager::GetComponent(EntityID entity)
 template <typename T>
 inline std::shared_ptr<ComponentManager::ComponentMap<T>> ComponentManager::GetComponentMap()
 {
-    return std::static_pointer_cast<ComponentMap<T>>(s_ComponentMaps[T::ComponentID]);
+    return std::static_pointer_cast<ComponentMap<T>>(s_ComponentMaps[T::ComponentID()]);
 }

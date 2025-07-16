@@ -7,6 +7,8 @@ namespace Assets
 {
     struct Texture : public Asset<Texture, sf::Texture>
     {
+        DECLARE_ASSET()
+
         Texture(Path path) : Asset<Texture, sf::Texture>(path, [=]()
                                                          {
                                                     // SFML loads the texture

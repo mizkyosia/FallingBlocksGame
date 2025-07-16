@@ -3,6 +3,14 @@
 #include <managers/AssetManager.hpp>
 #include <functional>
 
+#define DECLARE_ASSET()                                               \
+private:                                                              \
+    inline static AssetType s_AssetTypeID{AssetManager::MaxAssetTypes}; \
+                                                                      \
+public:                                                               \
+    friend class ::App;                                               \
+    inline static AssetType AssetTypeID() { return s_AssetTypeID; };
+
 namespace Assets
 {
     /**
@@ -17,8 +25,6 @@ namespace Assets
     {
         using SelfType = Asset<_Derived, DataType>;
         using Path = std::filesystem::path;
-
-        inline static const volatile AssetType AssetTypeID{AssetManager::Register<_Derived>()};
 
     private:
         friend AssetManager;

@@ -4,7 +4,15 @@
 #include <unordered_map>
 #include <bits/shared_ptr.h>
 
-#include "managers/ComponentManager.hpp"
+#include <managers/ComponentManager.hpp>
+
+#define DECLARE_COMPONENT()                                                                     \
+private:                                                                                        \
+    inline static ComponentManager::ComponentID s_ComponentID{ComponentManager::MaxComponents}; \
+                                                                                                \
+public:                                                                                         \
+    friend class ::App;                                                                         \
+    inline static ComponentManager::ComponentID ComponentID() { return s_ComponentID; };
 
 namespace Components
 {
@@ -13,11 +21,8 @@ namespace Components
      *
      * Used for abstraction & component management purposes
      */
-    template <typename T>
     struct Component
     {
-        /** \brief Unique ID specific to a certain type of component. All classes directly derived from `Component` possess a different static ID */
-        inline static volatile const ComponentManager::ComponentID ComponentID{ComponentManager::Register<T>()};
         Component() = default;
         virtual ~Component() = default;
     };

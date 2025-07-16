@@ -5,8 +5,10 @@
 
 namespace Components
 {
-    class Sprite : public Component<Sprite>
+    class Sprite : public Component
     {
+        DECLARE_COMPONENT()
+        
     public:
         sf::Sprite sprite;
         Assets::Texture texture;

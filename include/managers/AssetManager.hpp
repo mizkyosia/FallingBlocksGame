@@ -8,19 +8,20 @@
 
 #ifndef NDEBUG
 #include <iostream>
+#include <boost/core/demangle.hpp>
 #endif
 
 using AssetType = std::uint8_t;
 
 class AssetManager
 {
+public:
+    static volatile constexpr AssetType MaxAssetTypes = 8;
+
 private:
     using Path = std::filesystem::path;
     AssetManager() = delete;
     ~AssetManager() = delete;
-
-    template <typename _Derived, typename DataType>
-    friend struct Asset;
 
     friend class App;
 
@@ -97,7 +98,7 @@ inline AssetType AssetManager::Register()
     AssetType newType = s_AssetCollections.size();
 
 #ifndef NDEBUG
-    std::cout << "Registered type " << typeid(T).name() << " with AssetType " << (int)newType << std::endl;
+    std::cout << "Registered asset " << boost::core::demangle(typeid(T).name()) << " with AssetType " << (int)newType << std::endl;
 #endif
 
     // Create new collection
@@ -112,7 +113,7 @@ inline AssetManager::AssetCollection<T> &AssetManager::GetAssetCollection()
 {
     // Since type ID is actually the position of the collection in the collection vector,
     // We can simply retrieve it like so
-    return static_cast<AssetManager::AssetCollection<T> &>(*s_AssetCollections[T::AssetTypeID]);
+    return static_cast<AssetManager::AssetCollection<T> &>(*s_AssetCollections[T::AssetTypeID()]);
 }
 
 template <typename T>

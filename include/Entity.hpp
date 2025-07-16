@@ -94,7 +94,7 @@ public:
     [[nodiscard]] T &getComponent()
     {
         // If the entity does not have this component, throw an error
-        if (!s_Signatures[m_id][T::ComponentID])
+        if (!s_Signatures[m_id][T::ComponentID()])
             throw std::runtime_error{"Entity N°" + std::to_string(m_id) + "has no component " + std::string{typeid(T).name()}};
         return ComponentManager::GetComponent<T>(m_id);
     }
@@ -104,7 +104,7 @@ public:
     T &addComponent(T component)
     {
         // Change the signature for the given component
-        s_Signatures[m_id].set(T::ComponentID);
+        s_Signatures[m_id].set(T::ComponentID());
         return ComponentManager::AddComponent<T>(m_id, component);
     }
 
@@ -113,7 +113,7 @@ public:
     void removeComponent()
     {
         // Change the signature for the given component
-        s_Signatures[m_id].reset(T::ComponentID);
+        s_Signatures[m_id].reset(T::ComponentID());
         ComponentManager::RemoveComponent<T>(m_id);
     }
 
