@@ -1,1 +1,1 @@
-target_sources(FallingBlocks PRIVATE AssetsManager.cpp SceneManager.cpp)
+target_sources(FallingBlocks PUBLIC ComponentManager.cpp AssetManager.cpp)

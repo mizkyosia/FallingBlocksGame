@@ -1,4 +1,2 @@
-target_sources(FallingBlocks PRIVATE App.cpp)
-add_subdirectory(scenes)
-add_subdirectory(entities)
+target_sources(FallingBlocks PUBLIC App.cpp)
 add_subdirectory(managers)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.31)
 
 # Declare our project
 project(FallingBlocks CXX)
@@ -9,7 +9,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+set(BOOST_INCLUDE_LIBRARIES serialization)
+set(BOOST_ENABLE_CMAKE ON)
+
+
 include(FetchContent)
+
+# Fetch Boost Library
+FetchContent_Declare(
+  Boost
+  GIT_REPOSITORY https://github.com/boostorg/boost.git
+  GIT_TAG boost-1.80.0
+)
+FetchContent_MakeAvailable(Boost)
 
 # Fetch SFML Library
 FetchContent_Declare(SFML
@@ -24,16 +36,19 @@ FetchContent_MakeAvailable(SFML)
 add_executable(FallingBlocks main.cpp)
 add_subdirectory(src)
 
-# Link executable & SFML
-target_link_libraries(FallingBlocks SFML::Graphics SFML::Audio)
+# Link SFML library
+target_link_libraries(FallingBlocks PUBLIC SFML::Graphics SFML::Audio)
+
+# Link Boost libraries
+target_link_libraries(FallingBlocks PUBLIC Boost::serialization Boost::core)
 
 # Link our header files
 target_include_directories(FallingBlocks PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
+
 # Define our assets folder, and assets folder "copy" (actually a link)
 set(assetsDir "${CMAKE_SOURCE_DIR}/assets")
 set(assetsCopy "${CMAKE_BINARY_DIR}/bin/assets")
-
 
 # Now we have to link our assets, but copying them wouldn't be extremely convenient
 if(UNIX)
