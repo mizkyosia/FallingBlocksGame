@@ -13,10 +13,10 @@ namespace Components
         float angle;
         sf::Vector2f scale;
 
-        sf::Vector2f globalPosition;
-        float globalAngle;
-        sf::Vector2f globalScale;
+        sf::Vector2f localPosition;
+        float localAngle;
+        sf::Vector2f localScale;
 
-        Transform() : position{0, 0}, angle(0), scale{0, 0}, globalPosition(position), globalAngle(angle), globalScale(scale) {};
+        Transform() : position{0, 0}, angle(0), scale{0, 0}, localPosition(position), localAngle(angle), localScale(scale) {};
     };
 } // namespace Components

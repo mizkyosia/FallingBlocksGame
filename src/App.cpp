@@ -1,9 +1,11 @@
 #include <iostream>
 
-#include <Entity.hpp>
+#include "Entity.inl"
 #include <Assets.hpp>
 #include <Components.hpp>
 #include <App.hpp>
+
+#include <systems/TransformParentSystem.hpp>
 
 App::App() : m_window(sf::VideoMode({1920u, 1080u}), "Test project", sf::State::Windowed)
 {
@@ -38,16 +40,20 @@ void App::run()
     Entity::InitIDs();
 
     // See components below for more information
-    registerAssetType<Assets::Texture>();
-    registerAssetType<Assets::Font>();
-    registerAssetType<Assets::Sound>();
-    registerAssetType<Assets::Shader>();
+    registerAssetTypes<Assets::Texture,
+                       Assets::Font,
+                       Assets::Sound,
+                       Assets::Shader>();
 
     // Register our component types
     // Yes we both need to declare them and register them afterwards
-    // That is because the initialization order of the components matter
-    registerComponent<Components::Transform>();
-    registerComponent<Components::Sprite>();
+    // That is because the initialization order of the components matters,
+    // and it happens in the order of the registration of the components (not their declaration)
+    registerComponents<Components::Transform, Components::Sprite>();
+    // Note that you can make multiple calls to any of the `registerXXX` functions
+    registerComponents<Components::Collider>();
+
+    registerSystems<Systems::TransformParentSystem>();
 
     Assets::Texture teto{"assets/images/teto.png"};
 

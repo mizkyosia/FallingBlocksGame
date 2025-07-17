@@ -1,1 +1,1 @@
-target_sources(FallingBlocks PUBLIC ComponentManager.cpp AssetManager.cpp)
+target_sources(FallingBlocks PUBLIC ComponentManager.cpp AssetManager.cpp SystemManager.cpp)

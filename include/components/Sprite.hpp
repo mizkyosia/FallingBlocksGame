@@ -5,7 +5,7 @@
 
 namespace Components
 {
-    class Sprite : public Component
+    struct Sprite : public Component
     {
         DECLARE_COMPONENT()
         

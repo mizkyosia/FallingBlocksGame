@@ -6,6 +6,9 @@
 
 #include <managers/ComponentManager.hpp>
 
+// Forward declaration for the macro
+class App;
+
 #define DECLARE_COMPONENT()                                                                     \
 private:                                                                                        \
     inline static ComponentManager::ComponentID s_ComponentID{ComponentManager::MaxComponents}; \
