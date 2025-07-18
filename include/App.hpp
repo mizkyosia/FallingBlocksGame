@@ -4,6 +4,8 @@
 #include <managers/AssetManager.hpp>
 #include <managers/SystemManager.hpp>
 
+#include <Entity.hpp>
+
 #include <boost/core/demangle.hpp>
 
 class App
@@ -57,6 +59,8 @@ public:
     {
         (SystemManager::Register<_Systems>(), ...);
     }
+
+    sf::RenderWindow &window() { return m_window; };
 
     void run();
 };

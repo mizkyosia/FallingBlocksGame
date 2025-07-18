@@ -3,13 +3,15 @@
 #include <managers/AssetManager.hpp>
 #include <functional>
 
-#define DECLARE_ASSET()                                               \
-private:                                                              \
+#define DECLARE_ASSET()                                                 \
+private:                                                                \
     inline static AssetType s_AssetTypeID{AssetManager::MaxAssetTypes}; \
-                                                                      \
-public:                                                               \
-    friend class ::App;                                               \
+                                                                        \
+public:                                                                 \
+    friend ::App;                                                       \
     inline static AssetType AssetTypeID() { return s_AssetTypeID; };
+
+class App;
 
 namespace Assets
 {
@@ -40,6 +42,9 @@ namespace Assets
         bool *m_loaded;
 
     protected:
+        /** \brief Event function, called once when the asset is loaded */
+        virtual void whenLoaded() {};
+
     public:
         /** \brief Cannot create an empty asset */
         Asset() = delete;
@@ -63,6 +68,10 @@ namespace Assets
                                             std::lock_guard lock(mut);
                                             // Move the data inside the handle
                                             *m_handle = std::move(data);
+                                            // Mark the asset as ready
+                                            *m_loaded = true;
+                                            // Call the loaded "event"
+                                            whenLoaded();
                                            } }));
         }
 
@@ -97,7 +106,7 @@ namespace Assets
         /** \brief Reference access operator for the data linked to the asset handle */
         DataType *operator->()
         {
-            return m_handle;
+            return m_handle.get();
         }
     };
 

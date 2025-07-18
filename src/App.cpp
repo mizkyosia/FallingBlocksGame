@@ -1,14 +1,14 @@
 #include <iostream>
 
-#include "Entity.inl"
 #include <Assets.hpp>
 #include <Components.hpp>
 #include <App.hpp>
 
-#include <systems/TransformParentSystem.hpp>
+#include <Systems.hpp>
 
-App::App() : m_window(sf::VideoMode({1920u, 1080u}), "Test project", sf::State::Windowed)
+App::App() : m_window(sf::VideoMode({1920u, 1080u}), "Test project", sf::Style::None, sf::State::Windowed)
 {
+    m_window.setFramerateLimit(144);
 }
 
 App::~App()
@@ -18,8 +18,14 @@ App::~App()
 void App::loop()
 {
     bool open = true;
+
+    auto frameTimePoint = std::chrono::high_resolution_clock::now();
+    float dt = 0;
+
     while (open)
     {
+        using namespace std::chrono;
+
         while (const std::optional<sf::Event> event = m_window.pollEvent())
         {
             using sf::Event;
@@ -28,7 +34,16 @@ void App::loop()
             if (event->is<Event::Closed>())
                 open = false;
         }
-        /* code */
+
+        // Calculate delta time
+        auto startFrame = high_resolution_clock::now();
+        duration<float> dur = startFrame - frameTimePoint;
+        dt = dur.count();
+        frameTimePoint = startFrame;
+
+        AssetManager::PoolLoadingAssets();
+
+        SystemManager::Update(dt, *this);
 
         m_window.display();
     }
@@ -53,15 +68,20 @@ void App::run()
     // Note that you can make multiple calls to any of the `registerXXX` functions
     registerComponents<Components::Collider>();
 
-    registerSystems<Systems::TransformParentSystem>();
+    // Register our systems
+    registerSystems<Systems::TransformParent, Systems::SpriteDisplay>();
 
     Assets::Texture teto{"assets/images/teto.png"};
 
     std::cout << "Texture loading state : " << teto.loaded() << std::endl;
 
+    auto windowSize = m_window.getSize();
+
     Entity ent;
-    auto &sprite = ent.addComponent<Components::Sprite>(Components::Sprite(teto));
-    auto &transform = ent.addComponent<Components::Transform>(Components::Transform());
+    auto &transform = ent.addComponent(
+        Components::Transform{
+            .position = sf::Vector2f{windowSize.x / 2.f, windowSize.y / 2.f}});
+    auto &sprite = ent.addComponent(Components::Sprite(teto));
 
     std::cout << "Transform position : " << transform.position.x << '|' << transform.position.y << std::endl;
 

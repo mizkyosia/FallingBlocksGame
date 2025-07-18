@@ -20,3 +20,9 @@ void SystemManager::EntitySignatureChanged(Entity entity)
             system->m_entities.erase(entity);
     }
 }
+
+void SystemManager::Update(float deltaTime, App& app)
+{
+    for (auto &system : s_Systems)
+        system->update(deltaTime, app);
+}

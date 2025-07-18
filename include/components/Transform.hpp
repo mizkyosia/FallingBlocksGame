@@ -5,18 +5,16 @@
 
 namespace Components
 {
-    struct Transform : public Component
+    struct Transform
     {
         DECLARE_COMPONENT()
+    public:
+        sf::Vector2f position{0, 0};
+        float angle{0};
+        sf::Vector2f scale{1, 1};
 
-        sf::Vector2f position;
-        float angle;
-        sf::Vector2f scale;
-
-        sf::Vector2f localPosition;
-        float localAngle;
-        sf::Vector2f localScale;
-
-        Transform() : position{0, 0}, angle(0), scale{0, 0}, localPosition(position), localAngle(angle), localScale(scale) {};
+        sf::Vector2f localPosition{0, 0};
+        float localAngle{0};
+        sf::Vector2f localScale{1, 1};
     };
 } // namespace Components

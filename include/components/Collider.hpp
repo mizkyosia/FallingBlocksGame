@@ -5,7 +5,7 @@
 
 namespace Components
 {
-    struct Collider : public Component
+    struct Collider
     {
         DECLARE_COMPONENT()
 

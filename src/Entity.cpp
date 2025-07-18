@@ -1,7 +1,13 @@
-#pragma once
-
 #include <Entity.hpp>
 #include <managers/SystemManager.hpp>
+
+void Entity::InitIDs()
+{
+    for (ID i = 0; i < MaxEntities; i++)
+    {
+        s_ValidEntityIDs.push(i);
+    }
+}
 
 Entity::Entity() : m_id(s_ValidEntityIDs.back())
 {
@@ -14,10 +20,11 @@ Entity::Entity() : m_id(s_ValidEntityIDs.back())
 
 Entity::Entity(const Entity &other) : m_id(other.m_id) {}
 
-Entity::~Entity()
+void Entity::destroy()
 {
     // Destroy all of its components
     ComponentManager::EntityDestroyed(m_id);
+    
     // Remove it from all systems
     SystemManager::EntityDestroyed(*this);
 
@@ -37,14 +44,6 @@ Entity::~Entity()
             s_Parents.erase(child.m_id);
 }
 
-void Entity::InitIDs()
-{
-    for (ID i = 0; i < MaxEntities; i++)
-    {
-        s_ValidEntityIDs.push(i);
-    }
-}
-
 std::optional<Entity> Entity::getParent() const
 {
     if (s_Parents.contains(m_id))
@@ -56,31 +55,6 @@ std::optional<Entity> Entity::getParent() const
 Entity::Signature Entity::getSignature() const
 {
     return s_Signatures[m_id];
-}
-
-template <typename T>
-T &Entity::getComponent() const
-{
-    // If the entity does not have this component, throw an error
-    if (!s_Signatures[m_id][T::ComponentID()])
-        throw std::runtime_error{"Entity N°" + std::to_string(m_id) + "has no component " + std::string{typeid(T).name()}};
-    return ComponentManager::GetComponent<T>(m_id);
-}
-
-template <typename T>
-T &Entity::addComponent(T component) const
-{
-    // Change the signature for the given component
-    s_Signatures[m_id].set(T::ComponentID());
-    return ComponentManager::AddComponent<T>(m_id, component);
-}
-
-template <typename T>
-void Entity::removeComponent() const
-{
-    // Change the signature for the given component
-    s_Signatures[m_id].reset(T::ComponentID());
-    ComponentManager::RemoveComponent<T>(m_id);
 }
 
 Entity::ID Entity::id() const { return m_id; }

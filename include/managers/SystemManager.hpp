@@ -29,4 +29,7 @@ public:
 
     /** \brief Called when an entity is destroyed. Updates all systems accordingly */
     static void EntityDestroyed(Entity entity);
+
+    /** \brief Updates all of the systems */
+    static void Update(float deltaTime, App& app);
 };

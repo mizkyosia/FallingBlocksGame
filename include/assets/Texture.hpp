@@ -13,6 +13,10 @@ namespace Assets
                                                          {
                                                     // SFML loads the texture
                                                     return sf::Texture{path}; }) {};
+
+        void whenLoaded() override
+        {
+        }
     };
 
 } // namespace Assets
