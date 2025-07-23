@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.5)
 
 # Declare our project
 project(FallingBlocks CXX)

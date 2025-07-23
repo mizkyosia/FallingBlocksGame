@@ -2,7 +2,7 @@
 #include <unordered_set>
 #include <thread>
 
-#include <_Entity.hpp>
+#include <Entity.hpp>
 #include <Components.hpp>
 
 // Forward declaration for private member acces
@@ -15,7 +15,7 @@ namespace Systems
     {
     private:
         Entity::Set m_entities;
-        Entity::Signature m_signature;
+        Signature m_signature;
 
     public:
         friend class ::SystemManager;
@@ -31,7 +31,7 @@ namespace Systems
         virtual void update(float deltaTime, App &app) = 0;
 
         const Entity::Set &entities() const { return m_entities; }
-        const Entity::Signature &signature() const { return m_signature; }
+        const Signature &signature() const { return m_signature; }
     };
 
     /**

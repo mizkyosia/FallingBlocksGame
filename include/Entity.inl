@@ -1,6 +1,5 @@
 #pragma once
 
-#include <_Entity.hpp>
 #include <managers/SystemManager.hpp>
 
 template <typename T>

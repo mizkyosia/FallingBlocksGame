@@ -5,14 +5,14 @@ void Entity::InitIDs()
 {
     for (ID i = 0; i < MaxEntities; i++)
     {
-        s_ValidEntityIDs.push(i);
+        s_ValidEntitys.push(i);
     }
 }
 
-Entity::Entity() : m_id(s_ValidEntityIDs.back())
+Entity::Entity() : m_id(s_ValidEntitys.back())
 {
     // Remove the entity ID we just gave this entity
-    s_ValidEntityIDs.pop();
+    s_ValidEntitys.pop();
     // Add the entity into the global set
     Entity &ref = *this;
     s_LivingEntities.insert(ref);
@@ -29,7 +29,7 @@ void Entity::destroy()
     SystemManager::EntityDestroyed(*this);
 
     // Make the entity ID available again
-    s_ValidEntityIDs.push(m_id);
+    s_ValidEntitys.push(m_id);
     // Remove this entity from the global list
     s_LivingEntities.erase(*this);
 
@@ -52,7 +52,7 @@ std::optional<Entity> Entity::getParent() const
         return std::nullopt;
 }
 
-Entity::Signature Entity::getSignature() const
+Signature Entity::getSignature() const
 {
     return s_Signatures[m_id];
 }

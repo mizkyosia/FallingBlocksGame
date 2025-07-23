@@ -4,6 +4,8 @@
 #include <Components.hpp>
 #include <App.hpp>
 
+#include <Test.hpp>
+
 #include <Systems.hpp>
 
 App::App() : m_window(sf::VideoMode({1920u, 1080u}), "Test project", sf::Style::None, sf::State::Windowed)

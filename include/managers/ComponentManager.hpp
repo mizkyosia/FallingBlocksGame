@@ -5,23 +5,18 @@
 #include <vector>
 #include <stdexcept>
 
+#include <Global.hpp>
+
 #ifndef NDEBUG
 #include <iostream>
 #include <boost/core/demangle.hpp>
 #endif
-
-using EntityID = uint32_t;
 
 class ComponentManager
 {
 public:
     /** Declare App as friend for access */
     friend class App;
-
-    /**
-     * \brief Type ID of a component type
-     */
-    using ComponentID = std::uint8_t;
 
     /**
      * \brief Maximum number of different types of components that can be registered
@@ -36,8 +31,8 @@ private:
     {
     public:
         virtual ~IComponentMap() = default;
-        virtual void deleteComponent(EntityID entity) = 0;
-        virtual void insertComponent(EntityID entity) = 0;
+        virtual void deleteComponent(Entity entity) = 0;
+        virtual void insertComponent(Entity entity) = 0;
     };
 
     /**
@@ -47,19 +42,19 @@ private:
     class ComponentMap : public IComponentMap
     {
     public:
-        std::unordered_map<EntityID, T> m_map;
+        std::unordered_map<Entity, T> m_map;
 
         /** \brief Attaches a component to a given entity */
-        T &insertComponent(EntityID entity, T component);
+        T &insertComponent(Entity entity, T component);
 
         /** \brief Creates & inserts a default component, and attaches it to the entity */
-        void insertComponent(EntityID entity) override;
+        void insertComponent(Entity entity) override;
 
         /** \brief Gets the component associated to the entity */
-        [[nodiscard]] T &getComponent(EntityID entity);
+        [[nodiscard]] T &getComponent(Entity entity);
 
         /** \brief Deletes the component associated to the entity */
-        void deleteComponent(EntityID entity) override;
+        void deleteComponent(Entity entity) override;
     };
 
     /**
@@ -86,56 +81,56 @@ public:
      * \tparam T Type of the component
      */
     template <typename T>
-    static T &AddComponent(EntityID entity, T component);
+    static T &AddComponent(Entity entity, T component);
 
     /** \brief Instantiates a default component from the given ComponentType and attaches it to the given Entity */
-    static void AddComponent(EntityID entity, ComponentID componentType);
+    static void AddComponent(Entity entity, ComponentID componentType);
 
     /**
      * \brief Deletes the component instance associated to the given entity
      * \tparam T Type of the component
      */
     template <typename T>
-    static void RemoveComponent(EntityID entity);
+    static void RemoveComponent(Entity entity);
 
     /**
      * \brief Gets the component instance associated to the given entity
      * \tparam T Type of the component
      */
     template <typename T>
-    [[nodiscard]] static T &GetComponent(EntityID entity);
+    [[nodiscard]] static T &GetComponent(Entity entity);
 
     /** \brief Called when an entity is destroyed. Removes all of its components */
-    static void EntityDestroyed(EntityID entity);
+    static void EntityDestroyed(Entity entity);
 };
 
 template <typename T>
-inline T &ComponentManager::ComponentMap<T>::insertComponent(EntityID entity, T component)
+inline T &ComponentManager::ComponentMap<T>::insertComponent(Entity entity, T component)
 {
     m_map.insert({entity, component});
     return m_map[entity];
 }
 
 template <typename T>
-inline void ComponentManager::ComponentMap<T>::insertComponent(EntityID entity)
+inline void ComponentManager::ComponentMap<T>::insertComponent(Entity entity)
 {
     m_map.insert({entity, T()});
 }
 
 template <typename T>
-inline T &ComponentManager::ComponentMap<T>::getComponent(EntityID entity)
+inline T &ComponentManager::ComponentMap<T>::getComponent(Entity entity)
 {
     return m_map[entity];
 }
 
 template <typename T>
-inline void ComponentManager::ComponentMap<T>::deleteComponent(EntityID entity)
+inline void ComponentManager::ComponentMap<T>::deleteComponent(Entity entity)
 {
     m_map.erase(entity);
 }
 
 template <typename T>
-inline ComponentManager::ComponentID ComponentManager::Register()
+inline ComponentID ComponentManager::Register()
 {
     // Create a new map
     auto map = std::make_shared<ComponentMap<T>>();
@@ -152,19 +147,19 @@ inline ComponentManager::ComponentID ComponentManager::Register()
 }
 
 template <typename T>
-inline T &ComponentManager::AddComponent(EntityID entity, T component)
+inline T &ComponentManager::AddComponent(Entity entity, T component)
 {
     return GetComponentMap<T>()->insertComponent(entity, component);
 }
 
 template <typename T>
-inline void ComponentManager::RemoveComponent(EntityID entity)
+inline void ComponentManager::RemoveComponent(Entity entity)
 {
     GetComponentMap<T>()->deleteComponent(entity);
 }
 
 template <typename T>
-inline T &ComponentManager::GetComponent(EntityID entity)
+inline T &ComponentManager::GetComponent(Entity entity)
 {
     return GetComponentMap<T>()->getComponent(entity);
 }

@@ -9,7 +9,7 @@ void SystemManager::EntityDestroyed(Entity entity)
 
 void SystemManager::EntitySignatureChanged(Entity entity)
 {
-    Entity::Signature entitySig = entity.getSignature();
+    Signature entitySig = entity.getSignature();
     for (auto &system : s_Systems)
     {
         auto systemSig = system->signature();
