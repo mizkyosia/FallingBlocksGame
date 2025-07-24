@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 4.0)
 
 # Declare our project
 project(FallingBlocks CXX)
@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(BOOST_INCLUDE_LIBRARIES serialization)
+set(BOOST_INCLUDE_LIBRARIES serialization core)
 set(BOOST_ENABLE_CMAKE ON)
 
 
@@ -19,7 +19,7 @@ include(FetchContent)
 FetchContent_Declare(
   Boost
   GIT_REPOSITORY https://github.com/boostorg/boost.git
-  GIT_TAG boost-1.80.0
+  GIT_TAG boost-1.88.0
 )
 FetchContent_MakeAvailable(Boost)
 

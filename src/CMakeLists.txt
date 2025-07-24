@@ -1,3 +1,2 @@
-target_sources(FallingBlocks PUBLIC App.cpp Entity.cpp)
+target_sources(FallingBlocks PUBLIC App.cpp)
 add_subdirectory(managers)
-add_subdirectory(systems)

@@ -56,7 +56,7 @@ public:
 /// @cond TURN_OFF_DOXYGEN
 namespace internal
 {
-    template <typename... Ts>
+    template <typename T>
     struct is_system_function : std::false_type
     {
     };

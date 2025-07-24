@@ -12,34 +12,49 @@ struct Has
 };
 
 /**
- * @brief Fetches the requested component if an entity has it, or `std::nullopt` otherwise
+ * @brief Query data specifier. Fetches the requested component if an entity has it, or `nullptr` otherwise
  *
  * @tparam Component
  */
 template <typename Component>
-using Maybe = std::optional<Component *>;
+struct Maybe
+{
+};
 
 // Forward declaration for concept
 struct EntityCommands;
 
 /** @cond TURN_OFF_DOXYGEN */
-namespace traits {
-    template<typename T>
-    struct is_query_data : std::true_type {};
+namespace traits
+{
+    template <typename T>
+    struct is_query_data : std::true_type
+    {
+    };
 
-    template<typename T>
-    struct is_query_data<T*> : std::false_type {};
+    template <typename T>
+    struct is_query_data<T *> : std::false_type
+    {
+    };
 
-    template<typename T>
-    struct is_query_data<T&> : std::false_type {};
+    template <typename T>
+    struct is_query_data<T &> : std::false_type
+    {
+    };
 
-    template<>
-    struct is_query_data<EntityCommands> : std::true_type {};
+    template <>
+    struct is_query_data<EntityCommands> : std::true_type
+    {
+    };
 
-    template<typename T>
-    struct is_query_data<Maybe<T>> : std::true_type {};
-    
-    template<typename T>
-    struct is_query_data<Has<T>> : std::true_type {};
+    template <typename T>
+    struct is_query_data<Maybe<T>> : std::true_type
+    {
+    };
+
+    template <typename T>
+    struct is_query_data<Has<T>> : std::true_type
+    {
+    };
 }
 /** @endcond  */

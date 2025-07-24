@@ -19,7 +19,8 @@
 class World
 {
 private:
-    std::unordered_map<std::type_index, ArchetypePtr> m_archetypes; //!< All `Archetypes` created within this `World`
+    std::unordered_map<Signature, ArchetypePtr> m_archetypes;     //!< All `Archetypes` created within this `World`
+    std::unordered_map<Entity, ArchetypePtr> m_entityToArchetype; //!< Maps entities to the `Archetype` in whiche they are stored
     /**
      * @cond TURN_OFF_DOXYGEN
      * Using a `vector` to contain the queries + an unordered_map would mean faster iteration speed
@@ -33,6 +34,23 @@ private:
     std::vector<std::shared_ptr<ISystem>> m_systems;                        //!< Contains all `System`s in this `World`, type erased
     Commands m_commandQueue;                                                //!< The `CommandQueue` pertaining to this `World`. Allows modifications of the `World` through `System`s
     bool m_ticking;                                                         //!< Is a world tick currently running ?
+
+    /**
+     * @brief Inserts a given `System` in the world
+     *
+     * @tparam Params
+     * @param system
+     */
+    template <IsSystemParam... Params>
+    void insertSystem(System<Params...> system);
+
+    /**
+     * @brief Get the `ComponentID` of a specific component type, without checking if it has been registered
+     *
+     * @return ComponentID
+     */
+    template <typename C>
+    ComponentID getComponentIDUnchecked();
 
 public:
     World(/* args */);
@@ -90,4 +108,15 @@ public:
      */
     template <typename... Cs>
     void registerComponents();
+
+    /**
+     * @brief Get the `ComponentID` of a component type
+     *
+     * @warning Throws an error if the component type was not registered yet
+     *
+     * @tparam C
+     * @return ComponentID
+     */
+    template <typename C>
+    ComponentID getComponentID();
 };

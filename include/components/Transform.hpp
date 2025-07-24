@@ -1,13 +1,11 @@
 #pragma once
 #include <SFML/System/Vector2.hpp>
 
-#include <components/Component.hpp>
 
 namespace Components
 {
     struct Transform
     {
-        DECLARE_COMPONENT()
     public:
         sf::Vector2f position{0, 0};
         float angle{0};

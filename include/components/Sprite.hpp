@@ -1,13 +1,11 @@
 #pragma once
 #include <SFML/Graphics/Sprite.hpp>
-#include <components/Component.hpp>
 #include <assets/Texture.hpp>
 
 namespace Components
 {
     struct Sprite
     {
-        DECLARE_COMPONENT()
         
     public:
         sf::Sprite sprite;

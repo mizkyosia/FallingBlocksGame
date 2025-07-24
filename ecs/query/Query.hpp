@@ -1,7 +1,11 @@
 #pragma once
-#include <query/Filter.hpp>
-#include <query/Data.hpp>
+#include "Filter.hpp"
+#include "Data.hpp"
 #include <unordered_map>
+#include <bits/shared_ptr.h>
+
+// Forward declaration
+class IArchetype;
 
 struct IQuery
 {
@@ -44,6 +48,12 @@ struct Query : public IQuery
     using Row = std::tuple<decltype(fetchData<Data>(std::declval<Entity>()))...>;
 
 private:
+    Filter filter;                                    //!< Filter used in the query. May be a composite filter
+    Signature signature;                              //!< Signature of the query
+    std::vector<Row> data;                            //!< Data stored in the query. Packed into a vector for quick iteration
+    std::unordered_map<Entity, size_t> entityToIndex; //!< Maps an entity ID to an index in the `data` vector. Used when an entity changes
+    World &world;                                     //!< The `World` this query is attached to
+
     /**
      * @brief Creates a new query associated with a system
      * @tparam Filter The query's filter. Used to check for components associated with the entity without fetching them. Can be a composite filter. Can be omitted to not add any filters
@@ -58,14 +68,14 @@ private:
      * @param entity A valid ID for an entity selected by this query
      */
     template <typename T>
-    auto fetchData(Entity entity);
+    auto fetchData(Entity entity, std::shared_ptr<IArchetype> newArchetype);
 
     /**
      * @brief Fetches an entire row of `Data` pertaining to a given entity.
      *
      * @param entity A valid ID for an entity selected by this query
      */
-    auto fetchDataRow(Entity entity);
+    auto fetchDataRow(Entity entity, std::shared_ptr<IArchetype> newArchetype);
 
     /**
      * @brief Called by the `World` when an entity is updated. The query then removes/adds the entity to its search space as needed
@@ -74,7 +84,7 @@ private:
      * @param previous Previous signature of the entity. In case the entity was just created, this is the same as `current`
      * @param current New signature of the entity after modifications
      */
-    void entityUpdated(const Entity id, const Signature &previous, const Signature &current) override;
+    void entityUpdated(const Entity id, const Signature &previous, const Signature &current, std::shared_ptr<IArchetype> newArchetype) override;
     /**
      * @brief Called by the `World` whe an entity is destroyed. The query then removes the entity from its search space, if it was in it
      *
@@ -82,128 +92,43 @@ private:
      */
     void entityDeleted(const Entity id) override;
 
+    template <typename T>
+    void _setSignature();
+
 public:
-    /** The begin iterator of the query's data */
+    /** @brief The begin iterator of the query's data */
     const auto begin() { return data.begin(); };
-    /** The end iterator of the query's data */
+    /** @brief The end iterator of the query's data */
     const auto end() { return data.end(); };
 
     /**
      * @brief Can be used to fetch data relative to a specific entity.
      *
+     * @warning Throws an error if the `Query` doesn't contain the specified entity
+     *
      * @param entity The entity for whom we need to fetch the data
-     * @return const Row& A const reference to the query `Row` data associated with this entity.
+     * @return const Row& A const pointer to the query `Row` data associated with this entity.
      */
     const Row &operator[](Entity entity);
 
+    /**
+     * @brief Has this `Query` captured the specified entity ?
+     *
+     * @param entity
+     * @return true
+     * @return false
+     */
+    bool captured(Entity entity);
+
     /** Declare `World` as friend for global access */
     friend World;
-
-private:
-    Filter filter;                                    // Filter used in the query. May be a composite filter
-    Signature signature;                              // Signature of the query
-    std::vector<Row> data;                            // Data stored in the query. Packed into a vector for quick iteration
-    std::unordered_map<Entity, size_t> entityToIndex; // Maps an entity ID to an index in the `data` vector. Used when an entity changes
-    World &world;                                     // The `World` this query is attached to
 };
 
-template <IsQueryFilter Filter, typename... Data>
-template <typename T>
-inline auto Query<Filter, Data...>::fetchData(Entity entity)
-{
-    // If we check for ownership of a component
-    if constexpr (IsSpecializationOf<T, Has>)
-        return world.getStore<T>()->has(entity);
-    // If we fetch an optional component
-    else if constexpr (IsSpecializationOf<T, Maybe>)
-        return Maybe(world.getStore<T>()->get(entity));
-    // Else, we're fetching a component
-    else
-        return world.getStore<T>()->get(entity);
-}
-
-template <IsQueryFilter Filter, typename... Data>
-inline auto Query<Filter, Data...>::fetchDataRow(Entity entity)
-{
-    // Returns a new `Row` for the requested entity
-    return std::make_tuple(fetchData<Data>()...);
-}
-
-template <IsQueryFilter Filter, typename... Data>
-inline void Query<Filter, Data...>::entityUpdated(const Entity id, const Signature &previous, const Signature &current)
-{
-    bool match = ((current & signature) == signature) && filter.fetch(sig);
-    auto it = entityToIndex.find(id);
-
-    // If the query has selected the entity
-    if (match)
-    {
-        auto row = fetchDataRow(entity);
-        // Insert it if needed
-        if (it == entityToIndex.end())
-        {
-            entityToIndex[id] = data.size();
-            data.push_back(row);
-        }
-        // Or simply update it
-        else
-            data[it->second] = row;
-    }
-    // Else, remove it if it was selected before
-    else if (it != entityToIndex.end())
-        entityDeleted(id);
-}
-
-template <IsQueryFilter Filter, typename... Data>
-inline void Query<Filter, Data...>::entityDeleted(const Entity id)
-{
-    // Check if the query contains the entity
-    auto it = entityToIndex.find(id);
-    if (it == entityToIndex.end())
-        return;
-
-    size_t index = it->second;
-    size_t last = data.size() - 1;
-
-    // Swap operation to put the removed entity at the back of the data vector, to pop it rather than erase + move vector contents
-    // Even with the map iteration, it is faster than `data.erase()` in most cases
-    if (index != last)
-    {
-        data[index] = std::move(data[last]);
-        for (auto &[eid, idx] : entityToIndex)
-        {
-            if (idx == last)
-            {
-                idx = index;
-                break;
-            }
-        }
-    }
-
-    // And pop the last element
-    data.pop_back();
-    entityToIndex.erase(it);
-}
-
-template <IsQueryFilter Filter, typename... Data>
-inline const Query<Filter, Data...>::Row &Query<Filter, Data...>::operator[](Entity entity)
-{
-    return data[entityToIndex[entity]];
-}
-
-template <IsQueryFilter Filter, typename... Data>
-inline Query<Filter, Data...>::Query(World &world) : filter(), data(), entityToIndex(), signature(0), world(world)
-{
-    // Fold expression to set the signature
-    (if constexpr (!IsSpecializationOf<Data, Has> && !IsSpecializationOf<Data, Maybe>) { signature.set(world.getComponentID<Data>()); }, ...);
-}
+#include "Query.inl"
 
 /** Assures that the given type is a reference to a `Query` */
 template <typename T>
 concept IsQueryRef = std::is_reference_v<T> && IsSpecializationOf<std::remove_reference_t<T>, Query>;
 
-template <typename... Params>
-struct get_query_params
-{
-    using type = Params...;
-};
+template <typename T>
+concept IsComponentParameter = !std::is_reference_v<T> && !std::is_pointer_v<T> && !IsSpecializationOf<T, Has> && !IsSpecializationOf<T, Maybe> && !std::is_same_v<T, EntityCommands>;
