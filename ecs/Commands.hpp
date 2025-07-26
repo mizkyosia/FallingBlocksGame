@@ -2,6 +2,7 @@
 #include "Global.hpp"
 #include <queue>
 #include <functional>
+#include <variant>
 
 class EntityCommands;
 
@@ -20,10 +21,9 @@ class EntityCommands;
 class Commands
 {
 private:
-    World &m_world;                                   /** The `World` this queue has access to */
-    std::queue<std::function<void(World &)>> m_queue; /** The queue of actions to apply */
+    World &m_world; //!< The `World` this queue has access to
 
-    Commands(World &world);
+    Commands(World& world);
     ~Commands() = default;
 
 public:
@@ -37,21 +37,14 @@ public:
      * @return Entity
      */
     template <typename... Components>
-    Entity spawn(Components... components);
+    EntityCommands spawn(Components... components);
 
     /**
      * @brief Returns an `EntityCommands` for modifying a specific entity, rather than the entire `World`
      *
      * @return EntityCommandQueue
      */
-    EntityCommands entity();
-
-    /**
-     * @brief Allows queuing of special commands, granting direct access to the `World`. Use cautiously
-     *
-     * @param command
-     */
-    void custom(std::function<void(World &)> command);
+    EntityCommands entity(Entity entity);
 };
 
 /**
@@ -61,12 +54,15 @@ public:
 class EntityCommands
 {
     Entity m_entity;
-    Commands &m_commandQueue;
+    World &m_world;
 
-    EntityCommands(Commands &commandQueue);
+    EntityCommands(World& world, Entity entity);
     ~EntityCommands() = default;
 
 public:
+    friend Commands;
+    friend World;
+
     /**
      * @brief Get the component of the given `type` if the entity has one, or `nullptr` otherwise
      *
@@ -82,10 +78,9 @@ public:
      * @warning Will throw an error if the given component type is not registered in the `World`
      *
      * @tparam Component
-     * @return Component*
      */
     template <typename Component>
-    Component *insertComponent(Component component);
+    void insertComponent(Component component);
 
     /**
      * @brief Removes a component from the entity

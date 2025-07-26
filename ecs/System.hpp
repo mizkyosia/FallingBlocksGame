@@ -3,13 +3,18 @@
 #include <functional>
 #include <new>
 
+#include "Commands.hpp"
 #include "query/Query.hpp"
 #include "Global.hpp"
 
-class CommandsQueue;
+template<typename T>
+concept IsCommands = std::is_same_v<std::remove_cv_t<T>, Commands>;
+
+template<typename T>
+concept IsWorldRef = std::is_same_v<std::remove_cv_t<T>, World&>;
 
 template <typename T>
-concept IsSystemParam = IsQueryRef<T> || std::is_same_v<T, CommandsQueue &> || std::is_same_v<T, World &>;
+concept IsSystemParam = IsQueryRef<T> || IsCommands<T> || IsWorldRef<T>;
 
 /** Virtual base for all systems. Used for polymorphism & type erasure */
 struct ISystem
@@ -29,6 +34,7 @@ private:
     std::tuple<Params...> m_params;               // Parameters that are to be passed to the inner system
     std::function<void(Params...)> m_innerSystem; // The real underlying function of this system
 
+    System() = delete;
     System(std::tuple<Params...> params, std::function<void(Params...)> system) : m_params(params), m_innerSystem(system) {};
 
     /**

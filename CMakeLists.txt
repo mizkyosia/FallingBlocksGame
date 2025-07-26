@@ -36,11 +36,17 @@ FetchContent_MakeAvailable(SFML)
 add_executable(FallingBlocks main.cpp)
 add_subdirectory(src)
 
+# Add ECS library
+add_subdirectory(ecs)
+
 # Link SFML library
 target_link_libraries(FallingBlocks PUBLIC SFML::Graphics SFML::Audio)
 
 # Link Boost libraries
 target_link_libraries(FallingBlocks PUBLIC Boost::serialization Boost::core)
+
+# Link ECS library
+target_link_libraries(FallingBlocks PUBLIC ECS)
 
 # Link our header files
 target_include_directories(FallingBlocks PRIVATE ${PROJECT_SOURCE_DIR}/include)

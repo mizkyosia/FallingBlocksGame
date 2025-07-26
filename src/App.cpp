@@ -4,6 +4,8 @@
 #include <Components.hpp>
 #include <App.hpp>
 
+#include <ECS.hpp>
+
 App::App() : m_window(sf::VideoMode({1920u, 1080u}), "Test project", sf::Style::None, sf::State::Windowed)
 {
     m_window.setFramerateLimit(144);
@@ -39,14 +41,13 @@ void App::loop()
         dt = dur.count();
         frameTimePoint = startFrame;
 
-
-
         m_window.display();
     }
 }
 
 void App::run()
 {
+    World &world = World::Create<Components::Transform>();
 
     // See components below for more information
     registerAssetTypes<Assets::Texture,

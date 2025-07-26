@@ -14,14 +14,26 @@ class IArchetype
 {
 protected:
     World &m_world;
+    Signature m_signature = 0;                                  //!< Signature of all the components stored in the `Archetype`
+    std::unordered_map<Entity, size_t> m_entityToIndex;         //!< Maps an `Entity` to its index in the archetype columns
+    std::unordered_map<ComponentID, size_t> m_componentToIndex; //!< Maps a `ComponentID` to its index in the archetype table
 
-    virtual void requestTransfer(Entity, IArchetype *) = 0;
+    virtual size_t requestTransfer(Entity, IArchetype *) = 0;
     virtual void transferComponentUnsafe(ComponentID, size_t, void *) = 0;
     virtual size_t allocateEntity(Entity) = 0;
 
     virtual void *getComponentUnsafe(ComponentID, Entity) = 0;
 
+    /**
+     * @brief Removes an `Entity` from this `Archetype`. All its components must've been removed already
+     * 
+     * @param entity 
+     */
+    void removeEntity(Entity entity);
+
 public:
+    friend World;
+
     virtual bool match(const Signature &sig) = 0;
     virtual bool hasEntity(Entity entity) = 0;
 
@@ -34,6 +46,13 @@ public:
      */
     template <typename T>
     T *get(Entity entity);
+
+    /**
+     * @brief Get the Signature of the `Archetype`
+     *
+     * @return Signature
+     */
+    Signature getSignature();
 };
 
 /**
@@ -50,14 +69,8 @@ class Archetype : public IArchetype
 public:
     using Row = std::tuple<Components...>;
 
-    template <typename T>
-    concept ArchetypeComponent = InPack<T, Components...>;
-
 private:
-    Signature m_signature;                                      //!< Signature of all the components stored in the `Archetype`
-    std::unordered_map<Entity, size_t> m_entityToIndex;         //!< Maps an `Entity` to its index in the archetype columns
-    std::tuple<std::vector<Components>...> m_table;             //!< The actual table of components
-    std::unordered_map<ComponentID, size_t> m_componentToIndex; //!< Maps a `ComponentID` to its index in the archetype table
+    std::tuple<std::vector<Components>...> m_table; //!< The actual table of components
 
     /**
      * @brief Gets the vector containing all the instances of a given `Component` in this `Archetype`.
@@ -93,7 +106,7 @@ private:
      *
      * @param to The `Archetype` that the entity is transferred to
      */
-    void requestTransfer(Entity entity, IArchetype *to) override;
+    size_t requestTransfer(Entity entity, IArchetype *to) override;
 
     /**
      * @brief Get a component pointer cast as a void pointer, from a component ID
@@ -113,7 +126,7 @@ public:
 
     /** Declare self with other template specializations as friend */
     template <typename... Cs>
-    friend Archetype<Cs...>;
+    friend class Archetype;
 
     /**
      * @brief Sets the component for an entity
@@ -147,7 +160,3 @@ public:
      */
     bool match(const Signature &sig) override;
 };
-
-using ArchetypePtr = std::unique_ptr<IArchetype>;
-
-#include "Archetype.inl"

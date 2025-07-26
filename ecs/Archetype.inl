@@ -11,11 +11,16 @@ inline T *IArchetype::get(Entity entity)
     return static_cast<T *>(getComponentUnsafe(m_world.getComponentID<T>(), entity));
 }
 
+inline Signature IArchetype::getSignature()
+{
+    return m_signature;
+}
+
 template <typename... Components>
-inline Archetype<Components...>::Archetype(World &world) : m_signature(0), m_world(world)
+inline Archetype<Components...>::Archetype(World &world)
 {
     // Create signature
-    (m_signature.set(world.getComponentID<Component>()), ...);
+    (m_signature.set(world.getComponentID<Components>()), ...);
 }
 
 template <typename... Components>
@@ -56,7 +61,7 @@ template <typename... Components>
 inline size_t Archetype<Components...>::allocateEntity(Entity entity)
 {
     if (m_entityToIndex.contains(entity))
-        return;
+        return m_entityToIndex[entity];
 
     size_t idx = SIZE_MAX;
 
@@ -81,10 +86,10 @@ inline size_t Archetype<Components...>::allocateEntity(Entity entity)
 }
 
 template <typename... Components>
-inline void Archetype<Components...>::requestTransfer(Entity entity, IArchetype *to)
+inline size_t Archetype<Components...>::requestTransfer(Entity entity, IArchetype *to)
 {
-    // Allocate space for the entity's components
-    size_t newIndex = to->allocateEntity(entity);
+    // Allocate space for the entity's components (if needed)
+    size_t newIndex = to == nullptr ? 0 : to->allocateEntity(entity);
     size_t idx = m_entityToIndex[entity];
 
     size_t last = idx;
@@ -92,8 +97,14 @@ inline void Archetype<Components...>::requestTransfer(Entity entity, IArchetype 
     // Transfer all components & erase them from this `Archetype`
     (..., [&]<typename T>()
           {
+            // Get column of specific type
             auto &col = std::get<T>(m_table);
-            to->transferComponentUnsafe(m_world.getComponentID<T>(), newIndex, static_cast<void *>(&std::get<T>(m_table)[idx]));
+
+            // If we actually need to do a transfer
+            if(to != nullptr){
+                to->transferComponentUnsafe(m_world.getComponentID<T>(), newIndex, static_cast<void *>(&std::get<T>(m_table)[idx]));
+            }
+
             // Component transferred, we can now remove it from here (via swap & pop)
             last = col.size() - 1;
             if(idx != last) 
@@ -109,6 +120,11 @@ inline void Archetype<Components...>::requestTransfer(Entity entity, IArchetype 
                 pair.second = idx;
         }
     }
+
+    // Remove entity from index map
+    m_entityToIndex.erase(entity);
+
+    return newIndex;
 }
 
 template <typename... Components>

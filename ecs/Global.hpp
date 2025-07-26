@@ -1,9 +1,17 @@
 #pragma once
 #include <cstdint>
 #include <bitset>
+#include <bits/shared_ptr.h>
+
+#ifndef MAX_COMPONENTS
+#define MAX_COMPONENTS 32
+#endif
 
 /** \brief Forward declaration for an ECS World */
 class World;
+
+class IArchetype;
+using ArchetypePtr = std::shared_ptr<IArchetype>;
 
 /**
  * \brief Type ID of a component type
@@ -13,11 +21,8 @@ using ComponentID = std::uint8_t;
 /** \brief Type of an entity's ID */
 using Entity = uint32_t;
 
-/** \brief Maximum number of components that can be registered */
-inline constexpr ComponentID MaxComponents = 32;
-
 /** \brief Signature of an entity or a system. Fast representation of which components are attached to an entity */
-using Signature = std::bitset<MaxComponents>;
+using Signature = std::bitset<MAX_COMPONENTS>;
 
 namespace traits
 {
@@ -43,6 +48,9 @@ namespace traits
         using type = First;
     };
 
+    template <typename T, typename... Ts>
+    constexpr std::size_t count_occurrences = (0 + ... + (std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<Ts>> ? 1 : 0));
+
 }
 
 /** @brief Helper trait for checking whether a type is a specification of a given template */
@@ -56,3 +64,13 @@ concept GetFirstParam = traits::first_type_param<T>::type;
 /** @brief Checks if a specific type is in a parameter pack */
 template <typename T, typename... Ts>
 concept InPack = (std::is_same_v<T, Ts> || ...);
+
+/** @brief Asserts that all components in the subset is also part of the superset */
+template <typename... Subset, typename... Superset>
+concept AllInPack = (InPack<Subset, Superset...> && ...);
+
+/** @brief Checks if there are any duplicate types in the given parameter pack */
+template <typename... Ts>
+constexpr bool has_duplicate_types = ([]<typename T>()
+                                      { return traits::count_occurrences<T, Ts...> > 1; }.template operator()<Ts>() ||
+                                      ...); // fold expression over parameter pack

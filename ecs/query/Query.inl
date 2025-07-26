@@ -1,7 +1,7 @@
 #pragma once
 #include "Query.hpp"
 #include "../Archetype.hpp"
-#include "World.hpp"
+#include "../World.hpp"
 
 #include <boost/core/demangle.hpp>
 
@@ -45,13 +45,13 @@ inline auto Query<Filter, Data...>::fetchDataRow(Entity entity, std::shared_ptr<
 template <IsQueryFilter Filter, typename... Data>
 inline void Query<Filter, Data...>::entityUpdated(const Entity id, const Signature &previous, const Signature &current, std::shared_ptr<IArchetype> newArchetype)
 {
-    bool match = ((current & signature) == signature) && filter.fetch(sig);
+    bool match = ((current & signature) == signature) && filter.fetch(current, world);
     auto it = entityToIndex.find(id);
 
     // If the query has selected the entity
     if (match)
     {
-        auto row = fetchDataRow(entity);
+        auto row = fetchDataRow(id);
         // Insert it if needed
         if (it == entityToIndex.end())
         {
@@ -125,8 +125,8 @@ template <IsQueryFilter Filter, typename... Data>
 template <typename T>
 inline void Query<Filter, Data...>::_setSignature()
 {
-    if constexpr (!IsSpecializationOf<Data, Has> && !IsSpecializationOf<Data, Maybe> && !std::is_same_v<Data, EntityCommands>)
+    if constexpr (!IsSpecializationOf<T, Has> && !IsSpecializationOf<T, Maybe> && !std::is_same_v<T, EntityCommands>)
     {
-        signature.set(world.getComponentID<Data>());
+        signature.set(world.getComponentID<T>());
     }
 }

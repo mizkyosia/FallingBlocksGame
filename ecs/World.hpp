@@ -1,13 +1,19 @@
 #pragma once
 #include <unordered_map>
+#include <unordered_set>
 #include <bits/unique_ptr.h>
 #include <bits/shared_ptr.h>
 #include <typeindex>
+#include <queue>
 
-#include "Commands.hpp"
-#include "Archetype.hpp"
 #include "query/Query.hpp"
+#include "CommandsImpl.hpp"
+#include "Global.hpp"
 #include "System.hpp"
+#include "Archetype.hpp"
+#include "Commands.hpp"
+
+using WorldID = std::uint8_t;
 
 /**
  * @brief An ECS World
@@ -19,8 +25,11 @@
 class World
 {
 private:
-    std::unordered_map<Signature, ArchetypePtr> m_archetypes;     //!< All `Archetypes` created within this `World`
-    std::unordered_map<Entity, ArchetypePtr> m_entityToArchetype; //!< Maps entities to the `Archetype` in whiche they are stored
+    static inline std::unordered_set<std::shared_ptr<World>> s_Worlds; //!< All existing `World` instances. Prevents them from being moved in memory, and thus
+    ComponentID m_registeredComponents = 0;                            //!< Number of registered components in the `World`. Used for pseudo type-checking at runtime.
+    ComponentID m_nextComponentID = 0;                                 //!< The next registered component will have this ID. After creation of the `World`, should be the same as `m_registeredComponents`
+    std::unordered_map<Signature, ArchetypePtr> m_archetypes;          //!< All `Archetypes` created within this `World`
+    std::unordered_map<Entity, ArchetypePtr> m_entityToArchetype;      //!< Maps entities to the `Archetype` in which they are stored
     /**
      * @cond TURN_OFF_DOXYGEN
      * Using a `vector` to contain the queries + an unordered_map would mean faster iteration speed
@@ -31,18 +40,10 @@ private:
      * @endcond
      */
     std::unordered_map<std::type_index, std::shared_ptr<IQuery>> m_queries; //!< Maps a `Query` type to its data.
+    std::vector<AnyCommand> m_commandQueue;                                 //!< The queue of actions to apply. Implemented as a `vector` for iteration & clearing efficiency
     std::vector<std::shared_ptr<ISystem>> m_systems;                        //!< Contains all `System`s in this `World`, type erased
-    Commands m_commandQueue;                                                //!< The `CommandQueue` pertaining to this `World`. Allows modifications of the `World` through `System`s
+    std::queue<Entity> m_availableEntities;                                 //!< Contains all valid entities that are currently not spawned
     bool m_ticking;                                                         //!< Is a world tick currently running ?
-
-    /**
-     * @brief Inserts a given `System` in the world
-     *
-     * @tparam Params
-     * @param system
-     */
-    template <IsSystemParam... Params>
-    void insertSystem(System<Params...> system);
 
     /**
      * @brief Get the `ComponentID` of a specific component type, without checking if it has been registered
@@ -52,23 +53,92 @@ private:
     template <typename C>
     ComponentID getComponentIDUnchecked();
 
+    /**
+     * @brief Returns an Entity ID, and considers it spawned.
+     *
+     * @return Entity
+     */
+    Entity reserveEntity();
+
+    /**
+     * @brief Get an `Achetype` reference from the type of the components it contains
+     *
+     * Will create the `Archetype` if it doesn't exist
+     *
+     * @tparam Cs Types of the components. Specifiers & references are ignored
+     * @return ArchetypePtr
+     */
+    template <typename... Cs>
+    Archetype<Cs...> &getArchetype();
+
+    /**
+     * @brief Get an `Archetype` pointer from its signature
+     *
+     * @copydetails World::getArchetype()
+     *
+     * @param sig
+     * @return ArchetypePtr
+     */
+    ArchetypePtr getArchetype(const Signature &sig);
+
+    /**
+     * @brief Builds a system param from its type and returns it
+     *
+     * @tparam Param
+     * @return auto
+     */
+    template <IsSystemParam Param>
+    Param buildSystemParam();
+
+    /** @brief Creates a new `World`. Private constructor */
+    World();
+
+    // /** @brief `World`s are externally non-movable, for reference invalidation reasons. */
+    // World(World &&) = default;
+    // World(World &) = default;
+
 public:
-    World(/* args */);
+    friend Commands;
+    friend class EntityCommands;
+
+    template <typename... Ts>
+    friend class ComponentHelper;
+
     ~World() = default;
 
     /**
-     * @brief Returns the `CommandQueue` of this `World`
+     * @brief Creates a new `World` and makes the following components available in it.
      *
-     * @return CommandQueue&
+     * @tparam AllComponents Components that will be registered in the world
+     * @return World&
      */
-    Commands &commands();
+    template <typename... AllComponents>
+    static World &Create();
+
+    /**
+     * @brief Builds a `Signature` from the given component types
+     *
+     * @tparam Cs Component types to include in the `Signature`
+     * @return Signature
+     */
+    template <typename... Cs>
+    Signature buildSignature();
+
+    /**
+     * @brief Returns a `CommandQueue` allowing modification of this `World`
+     *
+     * @return CommandQueue
+     */
+    Commands commands();
 
     /**
      * @brief Spawns a new entity into the world
      *
-     * @return Entity The newly created entity's ID
+     * This `Entity` is effectively created at the end of the current (or next if no tick is currently running) `World` tick, but commands can still be queued to add or remove components from the `Entity`, or even despawn it before it even spawned.
+     *
+     * @return EntityCommands Commands to edit the newly created `Entity`
      */
-    Entity spawn();
+    EntityCommands spawn();
 
     /**
      * @brief Advance the `World` by one tick, if it isn't already in the middle of one.
@@ -91,23 +161,26 @@ public:
     Query<Filter, Params...> &query();
 
     /**
-     * @brief Adds multiple `System`s to the `World`, by creating them from a function with the right type signature.
+     * @brief Adds a single `System` to the `World`, by creating it from a function with the right type signature
      *
      * This function must return void, and only take parameters satisfying the `IsSystemParam` concept.
+     *
+     * @tparam Params Type of the parameters of the function
+     * @param system
+     */
+    template <IsSystemParam... Params>
+    void addSystem(std::function<void(Params...)> system);
+
+    /**
+     * @brief Adds multiple `System`s to the `World`, by creating them from a function with the right type signature.
+     *
+     * @copydetails World::addSystem()
      *
      * @tparam Funcs The type parameters for the functions
      * @param systems The underlying functions of the `System`s
      */
     template <IsSystemFunction... Funcs>
     void addSystems(Funcs... systems);
-
-    /**
-     * @brief Registers component types in the `World`, making them able to be attached to entities
-     *
-     * @tparam Cs Types of the components
-     */
-    template <typename... Cs>
-    void registerComponents();
 
     /**
      * @brief Get the `ComponentID` of a component type

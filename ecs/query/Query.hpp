@@ -6,7 +6,6 @@
 
 // Forward declaration
 class IArchetype;
-
 struct IQuery
 {
     virtual void entityUpdated(const Entity id, const Signature &previous, const Signature &current) = 0;
@@ -124,9 +123,25 @@ public:
     friend World;
 };
 
-#include "Query.inl"
+namespace traits
+{
+    // Base case : not a Query
+    template <typename>
+    struct QueryTraits
+    {
+        static constexpr bool is_query = false;
+    };
 
-/** Assures that the given type is a reference to a `Query` */
+    // Specialization for Query
+    template <IsQueryFilter Filt, typename... Data>
+    struct QueryTraits<Query<Filt, Data...>>
+    {
+        static constexpr bool is_query = true;
+        using Filter = Filt;
+        using DataTuple = std::tuple<Data...>;
+    };
+}
+
 template <typename T>
 concept IsQueryRef = std::is_reference_v<T> && IsSpecializationOf<std::remove_reference_t<T>, Query>;
 
