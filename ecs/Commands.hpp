@@ -23,10 +23,11 @@ class Commands
 private:
     World &m_world; //!< The `World` this queue has access to
 
-    Commands(World& world);
-    ~Commands() = default;
+    Commands(World &world);
 
 public:
+    ~Commands() = default;
+
     friend World;
 
     /**
@@ -56,10 +57,11 @@ class EntityCommands
     Entity m_entity;
     World &m_world;
 
-    EntityCommands(World& world, Entity entity);
-    ~EntityCommands() = default;
+    EntityCommands(World &world, Entity entity);
 
 public:
+    ~EntityCommands() = default;
+
     friend Commands;
     friend World;
 
@@ -71,6 +73,13 @@ public:
      */
     template <typename Component>
     Component *getComponent();
+
+    /**
+     * @brief Gets the `Entity` associated with this command
+     * 
+     * @return Entity 
+     */
+    Entity entity();
 
     /**
      * @brief Tries to insert a given component to the entity. If another component of the same type exists linked to this entity, this will overwrite it

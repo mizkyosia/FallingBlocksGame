@@ -60,9 +60,11 @@ inline World &World::Create()
     // Create the world
     auto world = std::make_shared<World>(World());
     // Register all components
-    ((world->m_registeredComponents = world->getComponentIDUnchecked<AllComponents>()), ...);
+    ((world->m_registeredComponents = world->getComponentIDUnchecked<std::remove_cvref_t<AllComponents>>()), ...);
 
-    if (world->m_registeredComponents + 1 != world->m_nextComponentID)
+    world->m_registeredComponents++;
+
+    if (world->m_registeredComponents != world->m_nextComponentID)
         throw std::runtime_error{"ECS Error : Difference between registered components & number of component IDs at instantiation"};
 
     // Insert it into the register of `World`s

@@ -1,7 +1,12 @@
 #include "ECS.hpp"
 #include <variant>
 
-World::World() {};
+World::World()
+{
+    // Fill entity IDs
+    for (Entity i = 0; i < MAX_ENTITIES; i++)
+        m_availableEntities.push(i);
+};
 
 Entity World::reserveEntity()
 {
@@ -29,6 +34,11 @@ ArchetypePtr World::getArchetype(const Signature &sig)
 
 void World::tick()
 {
+    // Check if we aren't ticking already
+    if (m_ticking)
+        return;
+    m_ticking = true;
+
     // Run all systems
     for (auto &system : m_systems)
         system->run();
@@ -127,4 +137,7 @@ void World::tick()
 
     // Clear command queue for next tick
     m_commandQueue.clear();
+
+    // End tick
+    m_ticking = false;
 }

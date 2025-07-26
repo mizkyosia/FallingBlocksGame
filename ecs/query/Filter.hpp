@@ -4,51 +4,51 @@
 
 #include "../Global.hpp"
 
-/** \brief Virtual base for all query filters */
+/** @brief Virtual base for all query filters */
 struct QueryFilter
 {
     virtual ~QueryFilter() = default;
 
-    /** \brief Required function. For the given entity signature, returns "true" if the entity matches the filter*/
+    /** @brief Required function. For the given entity signature, returns "true" if the entity matches the filter*/
     virtual bool fetch(const Signature &sig, const World &world) = 0;
 };
 
-/** \brief Asserts that template arguments are derived from `QueryFilter` */
+/** @brief Asserts that template arguments are derived from `QueryFilter` */
 template <typename T>
 concept IsQueryFilter = std::derived_from<T, QueryFilter>;
 
-/** \brief Empty struct representing no filter. Used for placeholding purposes */
+/** @brief Empty struct representing no filter. Used for placeholding purposes */
 struct None : public QueryFilter
 {
     bool fetch(const Signature &sig, const World &world) override;
 };
 
-/** \brief Query filter matching all entities containing all the given components, without fetching said components */
+/** @brief Query filter matching all entities containing all the given components, without fetching said components */
 template <typename... _Components>
 struct With : public QueryFilter
 {
     bool fetch(const Signature &sig, const World &world) override;
 };
 
-/** \brief Query filter matching all entities containing none of the given components */
+/** @brief Query filter matching all entities containing none of the given components */
 template <typename... _Components>
 struct Without : public QueryFilter
 {
     bool fetch(const Signature &sig, const World &world) override;
 };
 
-/** \brief Struct used for compositing filters. Virtual. Used to not repeat boilerplate code */
+/** @brief Struct used for compositing filters. Virtual. Used to not repeat boilerplate code */
 template <IsQueryFilter... _Filters>
 struct CompositeFilter : public QueryFilter
 {
-    /** \brief The filters to compose */
+    /** @brief The filters to compose */
     std::vector<std::unique_ptr<QueryFilter>> filters;
 
     CompositeFilter();
 };
 
 /**
- * \brief Query filter compositing multiple query filters, and evaluating to `true` if any of those filters evaluate to `true`
+ * @brief Query filter compositing multiple query filters, and evaluating to `true` if any of those filters evaluate to `true`
  * \tparam _Filters The filters to compose. Must be derived from `QueryFilter`
  * */
 template <IsQueryFilter... _Filters>
@@ -58,7 +58,7 @@ struct Any : public CompositeFilter<_Filters...>
 };
 
 /**
- * \brief Query filter compositing multiple filters, and asserts that only one of them is true
+ * @brief Query filter compositing multiple filters, and asserts that only one of them is true
  * \tparam _Filters The filters to compose. Must be derived from `QueryFilter`
  * */
 template <IsQueryFilter... _Filters>
@@ -68,7 +68,7 @@ struct One : public CompositeFilter<_Filters...>
 };
 
 /**
- * \brief Query filter compositing multiple filters, and asserts that all of them are true
+ * @brief Query filter compositing multiple filters, and asserts that all of them are true
  * \tparam _Filters The filters to compose. Must be derived from `QueryFilter`
  */
 template <IsQueryFilter... _Filters>

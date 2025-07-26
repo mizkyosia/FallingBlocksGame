@@ -22,7 +22,7 @@ struct RemoveComponentCommand
 struct AddComponentCommand
 {
     ComponentID component;
-    std::shared_ptr<void *> data;
+    std::shared_ptr<void> data;
 };
 
 using AnyEntityCommand = std::variant<SpawnEntityCommand, DespawnEntityCommand, AddComponentCommand, RemoveComponentCommand>;

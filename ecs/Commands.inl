@@ -8,9 +8,14 @@ inline Commands::Commands(World &world) : m_world(world) {};
 template <typename... Components>
 inline EntityCommands Commands::spawn(Components... components)
 {
-    Entity e = m_world.spawn();
-    (m_world.m_commandQueue.push_back(AnyCommand(AddComponentCommand{.component = m_world.getComponentID<Components>(), .entity = e, .data = std::make_shared(components)})), ...);
-    return EntityCommands(m_world, e);
+    EntityCommands cmd = m_world.spawn();
+    (m_world.m_commandQueue.push_back(AnyCommand(EntityCommand{
+        .entity = cmd.entity(),
+        .action = AddComponentCommand{
+            .component = m_world.getComponentID<Components>(),
+            .data = std::static_pointer_cast<void>(std::make_shared<Components>(components))}})),
+    ...);
+    return cmd;
 }
 
 inline EntityCommands Commands::entity(Entity entity)
@@ -26,6 +31,10 @@ inline Component *EntityCommands::getComponent()
     return m_world.m_entityToArchetype[m_entity]->get<Component>();
 };
 
+inline Entity EntityCommands::entity()
+{
+    return m_entity;
+}
 
 template <typename Component>
 inline void EntityCommands::insertComponent(Component component)

@@ -1,8 +1,8 @@
-#include <managers/AssetManager.hpp>
+#include "assets/AssetManager.hpp"
 #include <chrono>
 #include <algorithm>
 
-void AssetManager::PoolLoadingAssets()
+void AssetManager::poolLoadingAssets()
 {
     // Remove all loaded asset futures
     auto filter = std::remove_if(
@@ -27,9 +27,4 @@ void AssetManager::PoolLoadingAssets()
         });
     s_AssetLoaders.erase(
         filter, s_AssetLoaders.end());
-}
-
-void AssetManager::LoadAsset(std::future<void> builder)
-{
-    s_AssetLoaders.push_back(std::move(builder));
 }

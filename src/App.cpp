@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include <Assets.hpp>
 #include <Components.hpp>
 #include <App.hpp>
 
@@ -49,17 +48,11 @@ void App::run()
 {
     World &world = World::Create<Components::Transform>();
 
-    // See components below for more information
-    registerAssetTypes<Assets::Texture,
-                       Assets::Font,
-                       Assets::Sound,
-                       Assets::Shader>();
+    auto cmds = world.commands();
+
+    auto entityCmds = cmds.spawn(Components::Transform{.position = {50.f, 50.f}});
 
     // Register our systems
-
-    Assets::Texture teto{"assets/images/teto.png"};
-
-    std::cout << "Texture loading state : " << teto.loaded() << std::endl;
 
     auto windowSize = m_window.getSize();
 

@@ -1,6 +1,6 @@
 #pragma once
 #include <SFML/Graphics/Sprite.hpp>
-#include <assets/Texture.hpp>
+#include <ECS.hpp>
 
 namespace Components
 {
@@ -9,9 +9,9 @@ namespace Components
         
     public:
         sf::Sprite sprite;
-        Assets::Texture texture;
+        Asset<sf::Texture> texture;
 
-        Sprite(Assets::Texture texture) : texture(texture), sprite(*texture) {};
-        Sprite() : texture("assets/images/teto.png"), sprite(*texture) {};
+        Sprite(Asset<sf::Texture> texture) : texture(texture), sprite(*texture) {};
+        Sprite() : texture(), sprite(*texture) {};
     };
 } // namespace Components

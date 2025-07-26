@@ -7,21 +7,25 @@
 #define MAX_COMPONENTS 32
 #endif
 
-/** \brief Forward declaration for an ECS World */
+#ifndef MAX_ENTITIES
+#define MAX_ENTITIES 5000
+#endif
+
+/** @brief Forward declaration for an ECS World */
 class World;
 
 class IArchetype;
 using ArchetypePtr = std::shared_ptr<IArchetype>;
 
 /**
- * \brief Type ID of a component type
+ * @brief Type ID of a component type
  */
 using ComponentID = std::uint8_t;
 
-/** \brief Type of an entity's ID */
+/** @brief Type of an entity's ID */
 using Entity = uint32_t;
 
-/** \brief Signature of an entity or a system. Fast representation of which components are attached to an entity */
+/** @brief Signature of an entity or a system. Fast representation of which components are attached to an entity */
 using Signature = std::bitset<MAX_COMPONENTS>;
 
 namespace traits

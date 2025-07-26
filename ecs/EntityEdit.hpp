@@ -6,7 +6,7 @@
 struct EntityEdit
 {
     Signature signature;
-    std::unordered_map<ComponentID, std::shared_ptr<void *>> componentsToInsert;
+    std::unordered_map<ComponentID, std::shared_ptr<void>> componentsToInsert;
     bool justSpawned = false;
     bool despawning = false;
 };
