@@ -3,24 +3,21 @@
 #include <boost/core/demangle.hpp>
 
 #include <ECS.hpp>
+#include <assets/Asset.hpp>
 
 using TextureAsset = Asset<sf::Texture>;
 
 class App
 {
 private:
-    /**
-     * The SFML Window & Renderer
-     */
-    sf::RenderWindow m_window;
 
-    void loop();
+    World& world;
+
+    void loop(Resource<sf::RenderWindow> window);
 
 public:
     App();
     ~App();
     
-    sf::RenderWindow &window() { return m_window; };
-
     void run();
 };

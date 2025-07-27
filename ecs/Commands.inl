@@ -20,16 +20,27 @@ inline EntityCommands Commands::spawn(Components... components)
 
 inline EntityCommands Commands::entity(Entity entity)
 {
-    return EntityCommands(m_world, entity);
+    return EntityCommands(&m_world, entity);
 }
 
-inline EntityCommands::EntityCommands(World &world, Entity entity) : m_world(world), m_entity(entity) {};
+
+inline EntityCommands::EntityCommands(World *world, Entity entity) : m_world(world), m_entity(entity) {};
+
+inline EntityCommands& EntityCommands::operator=(const EntityCommands& other) {
+    m_world = other.m_world;
+    m_entity = other.m_entity;
+    return *this;
+}
 
 template <typename Component>
 inline Component *EntityCommands::getComponent()
 {
-    return m_world.m_entityToArchetype[m_entity]->get<Component>();
+    return m_world->m_entityToArchetype[m_entity]->get<Component>();
 };
+
+inline EntityCommands::EntityCommands(const EntityCommands &other) : m_entity(other.m_entity), m_world(other.m_world)
+{
+}
 
 inline Entity EntityCommands::entity()
 {
@@ -39,21 +50,21 @@ inline Entity EntityCommands::entity()
 template <typename Component>
 inline void EntityCommands::insertComponent(Component component)
 {
-    m_world.m_commandQueue.push_back(AnyCommand(AddComponentCommand{
+    m_world->m_commandQueue.push_back(AnyCommand(AddComponentCommand{
         .entity = m_entity,
-        .component = m_world.getComponentID<Component>(),
+        .component = m_world->getComponentID<Component>(),
         .data = std::make_shared(component)}));
 }
 
 template <typename Component>
 inline void EntityCommands::removeComponent()
 {
-    m_world.m_commandQueue.push_back(AnyCommand(AddComponentCommand{
+    m_world->m_commandQueue.push_back(AnyCommand(AddComponentCommand{
         .entity = m_entity,
-        .component = m_world.getComponentID<Component>()}));
+        .component = m_world->getComponentID<Component>()}));
 }
 
 inline void EntityCommands::destroy()
 {
-    m_world.m_commandQueue.push_back(AnyCommand(EntityCommand{.entity = m_entity, .action = DespawnEntityCommand{}}));
+    m_world->m_commandQueue.push_back(AnyCommand(EntityCommand{.entity = m_entity, .action = DespawnEntityCommand{}}));
 }

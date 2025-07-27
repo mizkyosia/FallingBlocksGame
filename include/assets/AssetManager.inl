@@ -1,5 +1,5 @@
 #pragma once
-#include "AssetManager.hpp"
+#include <assets/AssetManager.hpp>
 
 template <typename Data>
 template <typename... Args>

@@ -7,6 +7,11 @@
 
 #include "Global.hpp"
 
+namespace traits {
+    template<typename ...Ts>
+    struct Wrapper;
+}
+
 /**
  * @brief Base virtual class of all `Archetype`s. Used solely for type erasure & polymorphism
  */
@@ -31,8 +36,13 @@ protected:
      */
     void removeEntity(Entity entity);
 
+    IArchetype(World& world);
+
 public:
     friend World;
+
+    template<typename ...Ts>
+    friend class Archetype;
 
     virtual bool match(const Signature &sig) = 0;
     virtual bool hasEntity(Entity entity) = 0;
@@ -117,12 +127,21 @@ private:
      */
     void *getComponentUnsafe(ComponentID component, Entity entity) override;
 
-    Archetype(World &world);
-    ~Archetype() = default;
+    template<typename C>
+    Archetype<Components..., C> cloneWithComponent();
 
 public:
     friend class Commands;
     friend World;
+
+    template<typename ...Ts>
+    friend struct traits::Wrapper;
+
+    template<typename ...Ts>
+    friend class ComponentHelper;
+
+    Archetype(World &world);
+    ~Archetype() = default;
 
     /** Declare self with other template specializations as friend */
     template <typename... Cs>

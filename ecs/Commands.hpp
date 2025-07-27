@@ -55,12 +55,15 @@ public:
 class EntityCommands
 {
     Entity m_entity;
-    World &m_world;
+    World *&m_world;
 
-    EntityCommands(World &world, Entity entity);
+    EntityCommands(World *world, Entity entity);
 
 public:
     ~EntityCommands() = default;
+    EntityCommands(const EntityCommands &other);
+
+    EntityCommands& operator=(const EntityCommands& other);
 
     friend Commands;
     friend World;
@@ -76,8 +79,8 @@ public:
 
     /**
      * @brief Gets the `Entity` associated with this command
-     * 
-     * @return Entity 
+     *
+     * @return Entity
      */
     Entity entity();
 

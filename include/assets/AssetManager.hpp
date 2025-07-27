@@ -6,8 +6,8 @@
 #include <functional>
 #include <future>
 
-#include "../Global.hpp"
-#include "Asset.hpp"
+#include <ECS.hpp>
+#include <assets/Asset.hpp>
 
 #ifndef NDEBUG
 #include <iostream>
@@ -19,13 +19,7 @@ using Path = std::filesystem::path;
 
 class AssetManager
 {
-public:
-    static volatile constexpr AssetType MaxAssetTypes = 8;
-
 private:
-    AssetManager() = delete;
-    ~AssetManager() = delete;
-
     struct IAssetCollection
     {
         virtual ~IAssetCollection() = default;
@@ -36,13 +30,13 @@ private:
     {
         std::unordered_map<Path, Asset<T>> collection;
 
-        template<typename ...Args>
-        [[nodiscard]] Asset<T> getAsset(AssetManager& manager, Path path, Args... args);
+        template <typename... Args>
+        [[nodiscard]] Asset<T> getAsset(AssetManager &manager, Path path, Args... args);
     };
 
     std::vector<std::shared_ptr<IAssetCollection>> m_assetCollections; //!< Holds all the different asset collections, type-erased
     std::vector<std::future<void>> s_AssetLoaders;                     //!< Holds the threads currently loading assets
-    AssetType m_nextAssetType;                                         //!< Next `AssetType` ID that will be given to the next registered asset type
+    AssetType m_nextAssetType{0};                                         //!< Next `AssetType` ID that will be given to the next registered asset type
 
     /** @brief Pools the asset loader threads, and remove them if they're completed */
     void poolLoadingAssets();
@@ -61,6 +55,12 @@ private:
     AssetType getAssetTypeID();
 
 public:
+    AssetManager() = default;
+    ~AssetManager() = default;
+
+    AssetManager(const AssetManager &other);
+    AssetManager(AssetManager &&other);
+
     friend World;
 
     /**
@@ -82,3 +82,5 @@ public:
     template <typename T>
     Asset<T> get(Path path);
 };
+
+#include <assets/AssetManager.inl>

@@ -3,18 +3,22 @@
 #include <Components.hpp>
 #include <App.hpp>
 
+#include <assets/AssetManager.hpp>
+
 #include <ECS.hpp>
 
-App::App() : m_window(sf::VideoMode({1920u, 1080u}), "Test project", sf::Style::None, sf::State::Windowed)
+App::App() : world(World::Create<
+                   Components::Transform,
+                   Components::Collider,
+                   Components::Sprite>())
 {
-    m_window.setFramerateLimit(144);
 }
 
 App::~App()
 {
 }
 
-void App::loop()
+void App::loop(Resource<sf::RenderWindow> window)
 {
     bool open = true;
 
@@ -23,9 +27,7 @@ void App::loop()
 
     while (open)
     {
-        using namespace std::chrono;
-
-        while (const std::optional<sf::Event> event = m_window.pollEvent())
+        while (const std::optional<sf::Event> event = window->pollEvent())
         {
             using sf::Event;
 
@@ -34,29 +36,63 @@ void App::loop()
                 open = false;
         }
 
-        // Calculate delta time
-        auto startFrame = high_resolution_clock::now();
-        duration<float> dur = startFrame - frameTimePoint;
-        dt = dur.count();
-        frameTimePoint = startFrame;
+        world.tick();
 
-        m_window.display();
+        window->display();
     }
 }
 
+// First system test
+void test(
+    // Fetching access to the world
+    World &world,
+    // More control over the world
+    Commands cmd,
+    // Query selecting all entities
+    Query<None, Entity> &query)
+{
+    std::cout << "Yippeeeeee" << std::endl;
+    // Spawn entities until there are 200 of them
+    if (query.size() < 200)
+        cmd.spawn();
+};
+
+// Second system test
+void test2(
+    // First query, with a filter
+    Query<With<Components::Transform>, Entity, EntityCommands> &query,
+    // Second query, no filter but fetching a component
+    Query<None, Components::Transform> &otherQuery,
+    // Fetching a resource
+    Resource<sf::RenderWindow> window)
+{
+    std::cout << "Counted " << query.size() << " & " << otherQuery.size() << " living entities matching queries 1 & 2 :3 | Window width : " << window->getSize().x << std::endl;
+    // Iterating queries
+    for (auto [e, cmd] : query)
+    {
+        std::cout << "Entity n°" << e << std::endl;
+    }
+};
+
 void App::run()
 {
-    World &world = World::Create<Components::Transform>();
 
-    auto cmds = world.commands();
+    Commands cmds = world.commands();
 
-    auto entityCmds = cmds.spawn(Components::Transform{.position = {50.f, 50.f}});
+    // Spawn a entity with an integrated `Transform`
+    EntityCommands entityCmds = cmds.spawn(Components::Transform{.position = {50.f, 50.f}});
 
-    // Register our systems
+    // Insert new resources and get handles to them
+    auto [assets, window] = world.insertResources(AssetManager(), sf::RenderWindow(sf::VideoMode({1920u, 1080u}), "Test project", sf::Style::None, sf::State::Windowed));
 
-    auto windowSize = m_window.getSize();
+    window->setFramerateLimit(144);
 
-    loop();
+    // Add our systems
+    world.addSystems(test, test2);
 
-    m_window.close();
+    auto windowSize = window->getSize();
+
+    loop(window);
+
+    window->close();
 }

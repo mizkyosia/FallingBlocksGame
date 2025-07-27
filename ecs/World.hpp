@@ -12,6 +12,9 @@
 #include "System.hpp"
 #include "Archetype.hpp"
 #include "Commands.hpp"
+#include "Resource.hpp"
+
+#include "ComponentHelper.hpp"
 
 using WorldID = std::uint8_t;
 
@@ -25,11 +28,12 @@ using WorldID = std::uint8_t;
 class World
 {
 private:
-    static inline std::unordered_set<std::shared_ptr<World>> s_Worlds; //!< All existing `World` instances. Prevents them from being moved in memory, and thus
-    ComponentID m_registeredComponents = 0;                            //!< Number of registered components in the `World`. Used for pseudo type-checking at runtime.
-    ComponentID m_nextComponentID = 0;                                 //!< The next registered component will have this ID. After creation of the `World`, should be the same as `m_registeredComponents`
-    std::unordered_map<Signature, ArchetypePtr> m_archetypes;          //!< All `Archetypes` created within this `World`
-    std::unordered_map<Entity, ArchetypePtr> m_entityToArchetype;      //!< Maps entities to the `Archetype` in which they are stored
+    static inline std::unordered_set<std::shared_ptr<World>> s_Worlds;      //!< All existing `World` instances. Prevents them from being moved in memory, and thus invalidating references to them
+    std::unordered_map<std::type_index, std::shared_ptr<void>> m_resources; //!< Data of all `Resource`s inserted into the `World`
+    ComponentID m_registeredComponents = 0;                                 //!< Number of registered components in the `World`. Used for pseudo type-checking at runtime.
+    mutable ComponentID m_nextComponentID = 0;                               //!< The next registered component will have this ID. After creation of the `World`, should be the same as `m_registeredComponents`
+    std::unordered_map<Signature, ArchetypePtr> m_archetypes;               //!< All `Archetypes` created within this `World`
+    std::unordered_map<Entity, ArchetypePtr> m_entityToArchetype;           //!< Maps entities to the `Archetype` in which they are stored
     /**
      * @cond TURN_OFF_DOXYGEN
      * Using a `vector` to contain the queries + an unordered_map would mean faster iteration speed
@@ -43,7 +47,8 @@ private:
     std::vector<AnyCommand> m_commandQueue;                                 //!< The queue of actions to apply. Implemented as a `vector` for iteration & clearing efficiency
     std::vector<std::shared_ptr<ISystem>> m_systems;                        //!< Contains all `System`s in this `World`, type erased
     std::queue<Entity> m_availableEntities;                                 //!< Contains all valid entities that are currently not spawned
-    bool m_ticking;                                                         //!< Is a world tick currently running ?
+    bool m_ticking{false};                                                  //!< Is a world tick currently running ?
+    std::unique_ptr<IComponentHelper> m_componentHelper;                    //!< The `ComponentHelper`, which permits retrieval of component types from `Signature`s
 
     /**
      * @brief Get the `ComponentID` of a specific component type, without checking if it has been registered
@@ -51,7 +56,7 @@ private:
      * @return ComponentID
      */
     template <typename C>
-    ComponentID getComponentIDUnchecked();
+    ComponentID getComponentIDUnchecked() const;
 
     /**
      * @brief Returns an Entity ID, and considers it spawned.
@@ -90,8 +95,23 @@ private:
     template <IsSystemParam Param>
     Param buildSystemParam();
 
+    /**
+     * @brief Inserts a resource into the `World`, and returns a handle to it.
+     *
+     * For a given type `T`, there can only be 1 instance of a `Resource<T>` per `World`
+     *
+     * @tparam Res
+     * @param res
+     * @return Resource<Res>
+     */
+    template <typename Res>
+    Resource<std::decay_t<Res>> insertResource(Res &&res);
+
     /** @brief Creates a new `World`. Private constructor */
     World();
+
+    /** @brief Prevents `World`s from being moved */
+    World(World &&) = delete;
 
     // /** @brief `World`s are externally non-movable, for reference invalidation reasons. */
     // World(World &&) = default;
@@ -122,7 +142,7 @@ public:
      * @return Signature
      */
     template <typename... Cs>
-    Signature buildSignature();
+    Signature buildSignature() const;
 
     /**
      * @brief Returns a `CommandQueue` allowing modification of this `World`
@@ -169,7 +189,7 @@ public:
      * @param system
      */
     template <IsSystemParam... Params>
-    void addSystem(std::function<void(Params...)> system);
+    void addSystem(void (*system)(Params...));
 
     /**
      * @brief Adds multiple `System`s to the `World`, by creating them from a function with the right type signature.
@@ -183,6 +203,27 @@ public:
     void addSystems(Funcs... systems);
 
     /**
+     * @brief Inserts `Resource`s into the `World`, and returns handles to them
+     *
+     * @copydetails World::insertResource()
+     *
+     * @tparam Res The resource types
+     * @param res
+     * @return std::tuple<Resource<Res>...>
+     */
+    template <typename... Res>
+    std::tuple<Resource<std::decay_t<Res>>...> insertResources(Res &&...res);
+
+    /**
+     * @brief Get the `Resource` of given type if it was inserted in the map
+     *
+     * @tparam Res
+     * @return Resource<Res>
+     */
+    template <typename Res>
+    Resource<Res> getResource() const;
+
+    /**
      * @brief Get the `ComponentID` of a component type
      *
      * @warning Throws an error if the component type was not registered yet
@@ -191,5 +232,5 @@ public:
      * @return ComponentID
      */
     template <typename C>
-    ComponentID getComponentID();
+    ComponentID getComponentID() const;
 };

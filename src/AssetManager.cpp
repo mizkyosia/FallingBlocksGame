@@ -1,4 +1,4 @@
-#include "assets/AssetManager.hpp"
+#include <assets/AssetManager.hpp>
 #include <chrono>
 #include <algorithm>
 
@@ -27,4 +27,12 @@ void AssetManager::poolLoadingAssets()
         });
     s_AssetLoaders.erase(
         filter, s_AssetLoaders.end());
+}
+
+AssetManager::AssetManager(const AssetManager &other)
+{
+}
+
+AssetManager::AssetManager(AssetManager &&other)
+{
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include <SFML/Graphics/Sprite.hpp>
-#include <ECS.hpp>
+#include <assets/Asset.hpp>
 
 namespace Components
 {

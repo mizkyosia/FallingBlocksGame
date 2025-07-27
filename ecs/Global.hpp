@@ -54,7 +54,6 @@ namespace traits
 
     template <typename T, typename... Ts>
     constexpr std::size_t count_occurrences = (0 + ... + (std::is_same_v<std::remove_cvref_t<T>, std::remove_cvref_t<Ts>> ? 1 : 0));
-
 }
 
 /** @brief Helper trait for checking whether a type is a specification of a given template */

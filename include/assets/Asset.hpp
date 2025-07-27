@@ -32,10 +32,7 @@ private:
 
 protected:
     /** @brief Event function, called once when the asset is loaded */
-    virtual void whenLoaded() {};
-
-    virtual void load();
-
+    void whenLoaded() {};
 
     Asset(DataType data) : m_handle(std::make_shared(data)), m_loaded(new bool(false)) {};
 
@@ -70,11 +67,23 @@ public:
     /** @brief Reference access operator for the data linked to the asset handle */
     DataType &operator*()
     {
-        return std::ref(*m_handle);
+        return *m_handle;
+    }
+
+    /** @brief Reference access operator for the data linked to the asset handle */
+    const DataType &operator*() const
+    {
+        return *m_handle;
     }
 
     /** @brief Reference access operator for the data linked to the asset handle */
     DataType *operator->()
+    {
+        return m_handle.get();
+    }
+
+    /** @brief Reference access operator for the data linked to the asset handle */
+    const DataType *operator->() const
     {
         return m_handle.get();
     }

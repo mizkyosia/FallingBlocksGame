@@ -1,0 +1,1 @@
+target_sources(FallingBlocks PUBLIC AssetManager.cpp)

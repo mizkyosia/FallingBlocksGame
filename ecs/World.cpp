@@ -1,5 +1,7 @@
 #include "ECS.hpp"
 #include <variant>
+#include "World.hpp"
+#include "ComponentHelper.hpp"
 
 World::World()
 {
@@ -24,12 +26,21 @@ EntityCommands World::spawn()
 {
     Entity e = reserveEntity();
     m_commandQueue.push_back(AnyCommand(EntityCommand{.entity = e, .action = SpawnEntityCommand{}}));
-    return EntityCommands(*this, e);
+    return EntityCommands(this, e);
 }
 
 ArchetypePtr World::getArchetype(const Signature &sig)
 {
-    return ArchetypePtr();
+    auto it = m_archetypes.find(sig);
+    if (it != m_archetypes.end())
+        return it->second;
+
+    // Create the archetype
+    ArchetypePtr newArch = m_componentHelper->buildArchetype(sig, *this);
+
+    m_archetypes.insert({sig, newArch});
+
+    return newArch;
 }
 
 void World::tick()
@@ -78,12 +89,12 @@ void World::tick()
             // Add component to the map, and edit signature
             if (auto cmd = std::get_if<AddComponentCommand>(&entityCommand->action))
             {
-                edit->second.signature.set(cmd->component);
+                edit->second.signature.set(cmd->component, true);
                 edit->second.componentsToInsert.insert_or_assign(cmd->component, cmd->data);
             }
 
             // Remove component from the map, and edit signature
-            if (auto cmd = std::get_if<AddComponentCommand>(&entityCommand->action))
+            if (auto cmd = std::get_if<RemoveComponentCommand>(&entityCommand->action))
             {
                 edit->second.signature.set(cmd->component, false);
                 edit->second.componentsToInsert.erase(cmd->component);
@@ -109,6 +120,8 @@ void World::tick()
 
             // Make `Entity` available again
             m_availableEntities.push(entity);
+
+            continue;
         }
 
         // Get the new `Archetype` from its `Signature`
@@ -129,7 +142,7 @@ void World::tick()
 
         // Now that our entity is updated, notify all queries about it
         for (auto &[_, query] : m_queries)
-            query->entityUpdated(entity, edit.justSpawned ? 0 : m_archetypes[entity]->m_signature, edit.signature);
+            query->entityUpdated(entity, edit.justSpawned ? 0 : m_archetypes[entity]->m_signature, edit.signature, newArchetype);
 
         // And finally, update its `Archetype`
         m_entityToArchetype.insert_or_assign(entity, newArchetype);

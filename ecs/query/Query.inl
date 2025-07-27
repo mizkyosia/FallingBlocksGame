@@ -7,7 +7,7 @@
 
 template <IsQueryFilter Filter, typename... Data>
 template <typename T>
-inline auto Query<Filter, Data...>::fetchData(Entity entity, std::shared_ptr<IArchetype> newArchetype)
+inline decltype(auto) Query<Filter, Data...>::fetchData(World &world, Entity entity, std::shared_ptr<IArchetype> newArchetype)
 {
     if constexpr (IsSpecializationOf<T, Has>)
     {
@@ -24,6 +24,10 @@ inline auto Query<Filter, Data...>::fetchData(Entity entity, std::shared_ptr<IAr
         // Fetch an `EntityCommands` instance
         return world.commands().entity(entity);
     }
+    else if constexpr (std::is_same_v<std::decay_t<T>, Entity>)
+    {
+        return entity;
+    }
     else
     {
         // Most generic case, we're fetching a component that should exist
@@ -36,10 +40,10 @@ inline auto Query<Filter, Data...>::fetchData(Entity entity, std::shared_ptr<IAr
 }
 
 template <IsQueryFilter Filter, typename... Data>
-inline auto Query<Filter, Data...>::fetchDataRow(Entity entity, std::shared_ptr<IArchetype> newArchetype)
+inline Query<Filter, Data...>::Row Query<Filter, Data...>::fetchDataRow(Entity entity, std::shared_ptr<IArchetype> newArchetype)
 {
     // Returns a new `Row` for the requested entity
-    return std::make_tuple(fetchData<Data>(entity)...);
+    return std::make_tuple(fetchData<Data>(world, entity, newArchetype)...);
 }
 
 template <IsQueryFilter Filter, typename... Data>
@@ -51,7 +55,7 @@ inline void Query<Filter, Data...>::entityUpdated(const Entity id, const Signatu
     // If the query has selected the entity
     if (match)
     {
-        auto row = fetchDataRow(id);
+        Row row = fetchDataRow(id, newArchetype);
         // Insert it if needed
         if (it == entityToIndex.end())
         {
@@ -115,7 +119,7 @@ inline bool Query<Filter, Data...>::captured(Entity entity)
 }
 
 template <IsQueryFilter Filter, typename... Data>
-inline Query<Filter, Data...>::Query(World &world) : filter(), data(), entityToIndex(), signature(0), world(world)
+inline Query<Filter, Data...>::Query(World &world) : filter(), data{}, entityToIndex{}, signature(0), world(world)
 {
     // Fold expression to set the signature
     (_setSignature<Data>(), ...);
@@ -125,7 +129,7 @@ template <IsQueryFilter Filter, typename... Data>
 template <typename T>
 inline void Query<Filter, Data...>::_setSignature()
 {
-    if constexpr (!IsSpecializationOf<T, Has> && !IsSpecializationOf<T, Maybe> && !std::is_same_v<T, EntityCommands>)
+    if constexpr (!IsSpecializationOf<T, Has> && !IsSpecializationOf<T, Maybe> && !std::is_same_v<T, EntityCommands> && !std::is_same_v<T, Entity>)
     {
         signature.set(world.getComponentID<T>());
     }

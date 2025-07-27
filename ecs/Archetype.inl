@@ -2,6 +2,7 @@
 #include "Archetype.hpp"
 #include "World.hpp"
 
+#include <boost/core/demangle.hpp>
 #include <type_traits>
 
 template <typename T>
@@ -16,8 +17,12 @@ inline Signature IArchetype::getSignature()
     return m_signature;
 }
 
+inline IArchetype::IArchetype(World &world) : m_world(world)
+{
+}
+
 template <typename... Components>
-inline Archetype<Components...>::Archetype(World &world)
+inline Archetype<Components...>::Archetype(World &world) : IArchetype(world)
 {
     // Create signature
     (m_signature.set(world.getComponentID<Components>()), ...);
@@ -60,6 +65,8 @@ inline void Archetype<Components...>::transferComponentUnsafe(ComponentID compon
 template <typename... Components>
 inline size_t Archetype<Components...>::allocateEntity(Entity entity)
 {
+    std::cout << "Allocation request for Archetype " << m_signature << '(' << boost::core::demangle(typeid(Archetype<Components...>).name()) << ')' << std::endl;
+
     if (m_entityToIndex.contains(entity))
         return m_entityToIndex[entity];
 
@@ -130,12 +137,19 @@ inline size_t Archetype<Components...>::requestTransfer(Entity entity, IArchetyp
 template <typename... Components>
 inline void *Archetype<Components...>::getComponentUnsafe(ComponentID component, Entity entity)
 {
-    auto column = m_componentToIndex.find(component);
-    auto row = m_entityToIndex.find(entity);
-
-    if (column == m_componentToIndex.end() || row == m_entityToIndex.end())
+    if constexpr (sizeof...(Components) == 0)
+    {
         return nullptr;
-    return static_cast<void *>(&m_table[*column][*row]);
+    }
+    else
+    {
+        auto column = m_componentToIndex.find(component);
+        auto row = m_entityToIndex.find(entity);
+
+        if (column == m_componentToIndex.end() || row == m_entityToIndex.end())
+            return nullptr;
+        return static_cast<void *>(&m_table[*column][*row]);
+    }
 }
 
 template <typename... Components>
@@ -149,4 +163,11 @@ inline bool Archetype<Components...>::match(const Signature &sig)
 {
     // Is this signature a subset of the given signature ?
     return (sig & m_signature) == m_signature;
+}
+
+template <typename... Components>
+template <typename C>
+inline Archetype<Components..., C> Archetype<Components...>::cloneWithComponent()
+{
+    return Archetype<Components..., C>(m_world);
 }

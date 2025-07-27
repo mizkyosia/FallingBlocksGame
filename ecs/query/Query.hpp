@@ -8,7 +8,7 @@
 class IArchetype;
 struct IQuery
 {
-    virtual void entityUpdated(const Entity id, const Signature &previous, const Signature &current) = 0;
+    virtual void entityUpdated(const Entity id, const Signature &previous, const Signature &current, std::shared_ptr<IArchetype> newArchetype) = 0;
     virtual void entityDeleted(const Entity id) = 0;
 };
 
@@ -38,28 +38,7 @@ struct IQuery
 template <IsQueryFilter Filter = None, typename... Data>
 struct Query : public IQuery
 {
-    /**
-     * @brief
-     * Type of the actual data stored in the `Query`. Each entity has a `Row` containing its fetched data
-     *
-     * Slightly different from the `Data` template parameter used to construct it, most notably all component types are replaced by pointers, preserving `const`ness as needed
-     */
-    using Row = std::tuple<decltype(fetchData<Data>(std::declval<Entity>()))...>;
-
 private:
-    Filter filter;                                    //!< Filter used in the query. May be a composite filter
-    Signature signature;                              //!< Signature of the query
-    std::vector<Row> data;                            //!< Data stored in the query. Packed into a vector for quick iteration
-    std::unordered_map<Entity, size_t> entityToIndex; //!< Maps an entity ID to an index in the `data` vector. Used when an entity changes
-    World &world;                                     //!< The `World` this query is attached to
-
-    /**
-     * @brief Creates a new query associated with a system
-     * @tparam Filter The query's filter. Used to check for components associated with the entity without fetching them. Can be a composite filter. Can be omitted to not add any filters
-     * @tparam Components The type of the components that will be fetched
-     */
-    Query(World &world);
-
     /**
      * @brief Fetches a given query `Data` for a given entity
      *
@@ -67,14 +46,7 @@ private:
      * @param entity A valid ID for an entity selected by this query
      */
     template <typename T>
-    auto fetchData(Entity entity, std::shared_ptr<IArchetype> newArchetype);
-
-    /**
-     * @brief Fetches an entire row of `Data` pertaining to a given entity.
-     *
-     * @param entity A valid ID for an entity selected by this query
-     */
-    auto fetchDataRow(Entity entity, std::shared_ptr<IArchetype> newArchetype);
+    static decltype(auto) fetchData(World &world, Entity entity, std::shared_ptr<IArchetype> newArchetype);
 
     /**
      * @brief Called by the `World` when an entity is updated. The query then removes/adds the entity to its search space as needed
@@ -95,10 +67,41 @@ private:
     void _setSignature();
 
 public:
+    /**
+     * @brief Creates a new query associated with a system
+     * @tparam Filter The query's filter. Used to check for components associated with the entity without fetching them. Can be a composite filter. Can be omitted to not add any filters
+     * @tparam Components The type of the components that will be fetched
+     */
+    Query(World &world);
+
+    /**
+     * @brief
+     * Type of the actual data stored in the `Query`. Each entity has a `Row` containing its fetched data
+     *
+     * Slightly different from the `Data` template parameter used to construct it, most notably all component types are replaced by pointers, preserving `const`ness as needed
+     */
+    using Row = std::tuple<QueryDataOutput<Data>...>;
+
+private:
+    /**
+     * @brief Fetches an entire row of `Data` pertaining to a given entity.
+     *
+     * @param entity A valid ID for an entity selected by this query
+     */
+    Row fetchDataRow(Entity entity, std::shared_ptr<IArchetype> newArchetype);
+
+    Filter filter;                                    //!< Filter used in the query. May be a composite filter
+    Signature signature;                              //!< Signature of the query
+    std::vector<Row> data;                            //!< Data stored in the query. Packed into a vector for quick iteration
+    std::unordered_map<Entity, size_t> entityToIndex; //!< Maps an entity ID to an index in the `data` vector. Used when an entity changes
+    World &world;                                     //!< The `World` this query is attached to
+
+public:
     /** @brief The begin iterator of the query's data */
-    const auto begin() { return data.begin(); };
+    const auto begin() const { return data.begin(); };
     /** @brief The end iterator of the query's data */
-    const auto end() { return data.end(); };
+    const auto end() const { return data.end(); };
+    size_t size() const { return data.size(); }
 
     /**
      * @brief Can be used to fetch data relative to a specific entity.

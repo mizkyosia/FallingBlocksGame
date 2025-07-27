@@ -1,1 +1,0 @@
-target_sources(ECS PUBLIC Asset.hpp AssetManager.cpp AssetManager.hpp AssetManager.inl)

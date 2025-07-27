@@ -56,5 +56,38 @@ namespace traits
     struct is_query_data<Has<T>> : std::true_type
     {
     };
+
+    template <typename T>
+    struct query_data
+    {
+        using type = T *;
+    };
+
+    template <>
+    struct query_data<Entity>
+    {
+        using type = Entity;
+    };
+
+    template <>
+    struct query_data<EntityCommands>
+    {
+        using type = EntityCommands;
+    };
+
+    template <typename T>
+    struct query_data<Has<T>>
+    {
+        using type = bool;
+    };
+
+    template <typename T>
+    struct query_data<Maybe<T>>
+    {
+        using type = T *;
+    };
 }
 /** @endcond  */
+
+template<typename T>
+using QueryDataOutput = typename traits::query_data<T>::type;

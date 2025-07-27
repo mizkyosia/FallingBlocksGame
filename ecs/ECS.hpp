@@ -9,9 +9,7 @@
 #include "EntityEdit.hpp"
 #include "System.hpp"
 
-#include "assets/Asset.hpp"
-#include "assets/AssetManager.hpp"
-#include "assets/AssetManager.inl"
+#include "ComponentHelper.hpp"
 
 #include "Commands.inl"
 #include "query/Query.inl"
