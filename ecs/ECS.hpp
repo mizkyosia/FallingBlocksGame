@@ -8,11 +8,12 @@
 #include "CommandsImpl.hpp"
 #include "EntityEdit.hpp"
 #include "System.hpp"
+#include "Column.hpp"
 
-#include "ComponentHelper.hpp"
 
 #include "Commands.inl"
 #include "query/Query.inl"
 #include "Archetype.inl"
 #include "query/Filter.inl"
 #include "World.inl"
+#include "Column.inl"

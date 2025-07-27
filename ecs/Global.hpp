@@ -14,9 +14,6 @@
 /** @brief Forward declaration for an ECS World */
 class World;
 
-class IArchetype;
-using ArchetypePtr = std::shared_ptr<IArchetype>;
-
 /**
  * @brief Type ID of a component type
  */
@@ -77,3 +74,13 @@ template <typename... Ts>
 constexpr bool has_duplicate_types = ([]<typename T>()
                                       { return traits::count_occurrences<T, Ts...> > 1; }.template operator()<Ts>() ||
                                       ...); // fold expression over parameter pack
+
+/**
+ * @brief Global informations on the location of an `Entity`
+ *
+ */
+struct EntityLocation
+{
+    Signature signature = 0;
+    size_t row = SIZE_MAX;   //!< Default instantiation to SIZE_MAX so that an error is thrown if it is not set after construction
+};

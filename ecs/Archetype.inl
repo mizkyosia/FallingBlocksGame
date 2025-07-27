@@ -1,173 +1,106 @@
 #pragma once
 #include "Archetype.hpp"
 #include "World.hpp"
+#include "Column.hpp"
 
 #include <boost/core/demangle.hpp>
 #include <type_traits>
+#include <iostream>
 
 template <typename T>
-inline T *IArchetype::get(Entity entity)
+inline T *Archetype::get(Entity entity)
 {
     // Safety : the pointer is guaranteed by implementation to be a pointer of the requested type, cast as void for type erasure
     return static_cast<T *>(getComponentUnsafe(m_world.getComponentID<T>(), entity));
 }
 
-inline Signature IArchetype::getSignature()
+inline Signature Archetype::getSignature()
 {
     return m_signature;
 }
 
-inline IArchetype::IArchetype(World &world) : m_world(world)
-{
-}
-
-template <typename... Components>
-inline Archetype<Components...>::Archetype(World &world) : IArchetype(world)
-{
-    // Create signature
-    (m_signature.set(world.getComponentID<Components>()), ...);
-}
-
-template <typename... Components>
 template <typename Component>
-inline std::vector<Component> &Archetype<Components...>::getColumn()
+inline Column<Component> &Archetype::getColumn()
 {
-    return std::get<Component>(m_table);
+    return m_table[m_componentToIndex[m_world.getComponentID<Component>()]];
 }
 
-template <typename... Components>
 template <typename Component>
-inline void Archetype<Components...>::set(Entity entity, Component component)
+inline void Archetype::set(Entity entity, Component component)
 {
-    auto it = m_entityToIndex.find(entity);
-    if (it == m_entityToIndex.end())
+    auto loc = m_world.entityLocation(entity);
+    if (loc.signature != m_signature)
         return;
 
-    if constexpr (InPack<Component, Components...>)
-    {
-        std::get<Component>(m_table)[*it] = component;
-    }
+    getColumn<Component>()->set(loc.row, std::move(component));
 }
 
-template <typename... Components>
-inline void Archetype<Components...>::transferComponentUnsafe(ComponentID component, size_t index, void *data)
+inline void Archetype::transferComponentUnsafe(ComponentID component, size_t index, void *data)
 {
     //!!! Safety : the index MUST come from `Archetype::allocateEntity()`
 
-    (..., [&]<typename T>()
-          {
-        if (m_world.getComponentID<T>() == component) {
-            // Cast data as right type then dereference & move value
-            std::get<T>(m_table)[index] = *static_cast<T*>(data);
-        } }.template operator()<Components>());
+    // Cast data as right type then dereference & move value
+    m_table[m_componentToIndex[component]]->setComponentUnsafe(data, index);
 }
 
-template <typename... Components>
-inline size_t Archetype<Components...>::allocateEntity(Entity entity)
-{
-    std::cout << "Allocation request for Archetype " << m_signature << '(' << boost::core::demangle(typeid(Archetype<Components...>).name()) << ')' << std::endl;
-
-    if (m_entityToIndex.contains(entity))
-        return m_entityToIndex[entity];
-
-    size_t idx = SIZE_MAX;
-
-    // Fold expression to iterate over types
-    ([&]<typename T>()
-     {
-         // Resize each column and increase their size by 1
-        auto &col = std::get<T>(m_table);
-        auto size = col.size();
-
-        if(idx == SIZE_MAX) idx = size;
-        // Normally impossible, but just in case
-        else if(idx != size)
-            throw std::runtime_error{"ECS error : Differently sized columns in archetype : " + boost::core::demangle(typeid(Archetype<Components...>).name())};
-        
-        col.resize(col.size() + 1); }.template operator()<Components>(),
-     ...);
-
-    m_entityToIndex.insert({entity, idx});
-
-    return idx;
-}
-
-template <typename... Components>
-inline size_t Archetype<Components...>::requestTransfer(Entity entity, IArchetype *to)
+inline size_t Archetype::requestTransfer(Entity entity, Archetype *to)
 {
     // Allocate space for the entity's components (if needed)
     size_t newIndex = to == nullptr ? 0 : to->allocateEntity(entity);
-    size_t idx = m_entityToIndex[entity];
+    auto loc = m_world.entityLocation(entity);
 
-    size_t last = idx;
+    size_t last = loc.row;
 
     // Transfer all components & erase them from this `Archetype`
-    (..., [&]<typename T>()
-          {
-            // Get column of specific type
-            auto &col = std::get<T>(m_table);
-
-            // If we actually need to do a transfer
-            if(to != nullptr){
-                to->transferComponentUnsafe(m_world.getComponentID<T>(), newIndex, static_cast<void *>(&std::get<T>(m_table)[idx]));
-            }
-
-            // Component transferred, we can now remove it from here (via swap & pop)
-            last = col.size() - 1;
-            if(idx != last) 
-                col[idx] = std::move(col[last]);
-            col.pop_back(); }.template operator()<Components>());
-
-    // If it already was the last, no need to re-map index
-    if (idx != last)
+    for (auto &col : m_table)
     {
-        for (auto &pair : m_entityToIndex)
-        {
-            if (pair.second == last)
-                pair.second = idx;
-        }
+
+        // If we actually need to do a transfer
+        if (to != nullptr)
+            to->transferComponentUnsafe(col->componentID, newIndex, col->get(loc.row));
+
+        // Component transferred, we can now remove it from here (via swap & pop)
+        last = col->size() - 1;
+        col->erase(loc.row);
     }
 
-    // Remove entity from index map
-    m_entityToIndex.erase(entity);
+    // If it already was the last, no need to re-map index
+    if (loc.row != last)
+    {
+        for (auto &pair : m_world.m_entityLocations)
+        {
+            if (pair.second.row == last)
+                pair.second.row = loc.row;
+        }
+    }
 
     return newIndex;
 }
 
-template <typename... Components>
-inline void *Archetype<Components...>::getComponentUnsafe(ComponentID component, Entity entity)
+inline void *Archetype::getComponentUnsafe(ComponentID component, Entity entity)
 {
-    if constexpr (sizeof...(Components) == 0)
-    {
+    auto column = m_componentToIndex.find(component);
+    auto location = m_world.entityLocation(entity);
+
+    if (column == m_componentToIndex.end() || location.signature != m_signature)
         return nullptr;
-    }
-    else
-    {
-        auto column = m_componentToIndex.find(component);
-        auto row = m_entityToIndex.find(entity);
-
-        if (column == m_componentToIndex.end() || row == m_entityToIndex.end())
-            return nullptr;
-        return static_cast<void *>(&m_table[*column][*row]);
-    }
+    return m_table[column->second]->get(location.row);
 }
 
-template <typename... Components>
-inline bool Archetype<Components...>::hasEntity(Entity entity)
+inline bool Archetype::hasEntity(Entity entity)
 {
-    return m_entityToIndex.contains(entity);
+    return m_world.entityLocation(entity).signature == m_signature;
 }
 
-template <typename... Components>
-inline bool Archetype<Components...>::match(const Signature &sig)
+inline bool Archetype::match(const Signature &sig)
 {
     // Is this signature a subset of the given signature ?
     return (sig & m_signature) == m_signature;
 }
 
-template <typename... Components>
-template <typename C>
-inline Archetype<Components..., C> Archetype<Components...>::cloneWithComponent()
+template <typename Component>
+inline void Archetype::insertColumn(Column<Component> *col)
 {
-    return Archetype<Components..., C>(m_world);
-}
+    m_componentToIndex[m_world.getComponentID<Component>()] = m_table.size();
+    m_table.push_back(col);
+};

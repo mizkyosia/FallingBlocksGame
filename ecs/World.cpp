@@ -1,7 +1,6 @@
 #include "ECS.hpp"
 #include <variant>
 #include "World.hpp"
-#include "ComponentHelper.hpp"
 
 World::World()
 {
@@ -29,18 +28,20 @@ EntityCommands World::spawn()
     return EntityCommands(this, e);
 }
 
-ArchetypePtr World::getArchetype(const Signature &sig)
+Archetype &World::getArchetype(const Signature &sig)
 {
     auto it = m_archetypes.find(sig);
     if (it != m_archetypes.end())
         return it->second;
 
-    // Create the archetype
-    ArchetypePtr newArch = m_componentHelper->buildArchetype(sig, *this);
+    auto [a, b] = m_archetypes.insert({sig, Archetype(*this, sig)});
 
-    m_archetypes.insert({sig, newArch});
+    return a->second;
+}
 
-    return newArch;
+inline Archetype &World::getArchetype(Entity entity)
+{
+    return getArchetype(m_entityLocations[entity].signature);
 }
 
 void World::tick()
@@ -83,7 +84,7 @@ void World::tick()
             }
             else if (firstEdit)
             {
-                edit->second.signature = m_entityToArchetype[entityCommand->entity]->getSignature();
+                edit->second.signature = m_entityLocations[entityCommand->entity].signature;
             }
 
             // Add component to the map, and edit signature
@@ -108,15 +109,16 @@ void World::tick()
         // If we despawn the entity
         if (edit.despawning)
         {
-            // Request transfer to no `Archetype` (destruction of components & removal of space for entity)
-            m_entityToArchetype[entity]->requestTransfer(entity, nullptr);
+            Archetype &previous = getArchetype(entity);
 
-            // Unmap archetype from `Entity`
-            m_entityToArchetype.erase(entity);
+            // Request transfer to no `Archetype` (destruction of components & removal of space for entity)
+            previous.requestTransfer(entity, nullptr);
 
             // Notify queries about the entity's destruction
             for (auto &[_, query] : m_queries)
                 query->entityDeleted(entity);
+
+            m_entityLocations.erase(entity);
 
             // Make `Entity` available again
             m_availableEntities.push(entity);
@@ -125,27 +127,28 @@ void World::tick()
         }
 
         // Get the new `Archetype` from its `Signature`
-        auto newArchetype = getArchetype(edit.signature);
-        size_t newRow = 0;
+        auto &newArchetype = getArchetype(edit.signature);
+        // Get or create
+        EntityLocation &location = m_entityLocations[entity];
 
         // If the entity has just spawned, allocate it manually
         if (edit.justSpawned)
-            newRow = newArchetype->allocateEntity(entity);
+            location.row = newArchetype.allocateEntity(entity);
         // Otherwise, request transfer from the old archetype to the new
         else
-            newRow = m_entityToArchetype[entity]->requestTransfer(entity, newArchetype.get());
+            location.row = m_archetypes.find(m_entityLocations[entity].signature)->second.requestTransfer(entity, &newArchetype);
 
         // Then, transfer all new components (if there are any)
         // SAFETY : Safe because we allocated a row for the `Entity` the right way
         for (auto [id, data] : edit.componentsToInsert)
-            newArchetype->transferComponentUnsafe(id, newRow, data.get());
+            newArchetype.transferComponentUnsafe(id, location.row, data.get());
+
+        // Update signature
+        location.signature = edit.signature;
 
         // Now that our entity is updated, notify all queries about it
         for (auto &[_, query] : m_queries)
-            query->entityUpdated(entity, edit.justSpawned ? 0 : m_archetypes[entity]->m_signature, edit.signature, newArchetype);
-
-        // And finally, update its `Archetype`
-        m_entityToArchetype.insert_or_assign(entity, newArchetype);
+            query->entityUpdated(entity, location.signature, edit.signature, newArchetype);
     }
 
     // Clear command queue for next tick
@@ -153,4 +156,19 @@ void World::tick()
 
     // End tick
     m_ticking = false;
+}
+
+IColumn *World::getTemplateColumn(ComponentID id) const
+{
+    return m_templateColumns[id]->clone();
+}
+
+inline EntityLocation &World::entityLocation(Entity entity)
+{
+    return m_entityLocations[entity];
+}
+
+inline const EntityLocation &World::entityLocation(Entity entity) const
+{
+    return m_entityLocations.find(entity)->second;
 }

@@ -13,9 +13,9 @@ ComponentID World::getComponentIDUnchecked() const
 }
 
 template <typename... Cs>
-inline Archetype<Cs...> &World::getArchetype()
+inline Archetype &World::getArchetype()
 {
-    return *static_cast<Archetype<Cs...> *>(getArchetype(buildSignature<Cs...>()).get());
+    return getArchetype(buildSignature<Cs...>());
 }
 
 template <IsSystemParam Param>
@@ -71,6 +71,7 @@ inline World &World::Create()
 {
     // Create the world
     auto world = std::shared_ptr<World>(new World());
+
     // Register all components
     ((world->m_registeredComponents = world->getComponentIDUnchecked<std::remove_cvref_t<AllComponents>>()), ...);
 
@@ -79,7 +80,9 @@ inline World &World::Create()
     if (world->m_registeredComponents != world->m_nextComponentID)
         throw std::runtime_error{"ECS Error : Difference between registered components & number of component IDs at instantiation"};
 
-    world->m_componentHelper = std::make_unique<ComponentHelper<AllComponents...>>();
+    // Instantiate our template columns
+    world->m_templateColumns.reserve(sizeof...(AllComponents));
+    (world->m_templateColumns.push_back(new Column<AllComponents>(*world)), ...);
 
     // Insert it into the register of `World`s
     s_Worlds.insert(world);
@@ -104,8 +107,8 @@ Query<Filter, Params...> &World::query()
                       newQuery});
 
     // And instantiate it by checking all entities that match
-    for (auto &[entity, archetype] : m_entityToArchetype)
-        newQuery->entityUpdated(entity, archetype->m_signature, archetype->m_signature, archetype);
+    for (auto &[entity, location] : m_entityLocations)
+        newQuery->entityUpdated(entity, location.signature, location.signature, m_archetypes.find(location.signature)->second);
 
     return *newQuery;
 }

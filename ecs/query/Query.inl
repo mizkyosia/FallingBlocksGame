@@ -7,17 +7,17 @@
 
 template <IsQueryFilter Filter, typename... Data>
 template <typename T>
-inline decltype(auto) Query<Filter, Data...>::fetchData(World &world, Entity entity, std::shared_ptr<IArchetype> newArchetype)
+inline decltype(auto) Query<Filter, Data...>::fetchData(World &world, Entity entity, Archetype& newArchetype)
 {
     if constexpr (IsSpecializationOf<T, Has>)
     {
         // Check for availability of component
-        return newArchetype->get<GetFirstParam<T>>(entity) != nullptr;
+        return newArchetype.get<GetFirstParam<T>>(entity) != nullptr;
     }
     else if constexpr (IsSpecializationOf<T, Maybe>)
     {
         // Fetching a component that may not exist, nullptr is allowed
-        return newArchetype->get<GetFirstParam<T>>(entity);
+        return newArchetype.get<GetFirstParam<T>>(entity);
     }
     else if constexpr (std::is_same_v<T, EntityCommands>)
     {
@@ -31,7 +31,7 @@ inline decltype(auto) Query<Filter, Data...>::fetchData(World &world, Entity ent
     else
     {
         // Most generic case, we're fetching a component that should exist
-        T *comp = newArchetype->get<T>(entity);
+        T *comp = newArchetype.get<T>(entity);
         // If it does not, we fucked up somewhere earlier
         if (comp == nullptr)
             throw std::runtime_error{std::string{"Internal error : Entity n°"} + std::to_string(entity) + " guaranteed to have component " + boost::core::demangle(typeid(T).name()) + " but does not have one"};
@@ -40,14 +40,14 @@ inline decltype(auto) Query<Filter, Data...>::fetchData(World &world, Entity ent
 }
 
 template <IsQueryFilter Filter, typename... Data>
-inline Query<Filter, Data...>::Row Query<Filter, Data...>::fetchDataRow(Entity entity, std::shared_ptr<IArchetype> newArchetype)
+inline Query<Filter, Data...>::Row Query<Filter, Data...>::fetchDataRow(Entity entity, Archetype& newArchetype)
 {
     // Returns a new `Row` for the requested entity
     return std::make_tuple(fetchData<Data>(world, entity, newArchetype)...);
 }
 
 template <IsQueryFilter Filter, typename... Data>
-inline void Query<Filter, Data...>::entityUpdated(const Entity id, const Signature &previous, const Signature &current, std::shared_ptr<IArchetype> newArchetype)
+inline void Query<Filter, Data...>::entityUpdated(const Entity id, const Signature &previous, const Signature &current, Archetype& newArchetype)
 {
     bool match = ((current & signature) == signature) && filter.fetch(current, world);
     auto it = entityToIndex.find(id);

@@ -14,8 +14,6 @@
 #include "Commands.hpp"
 #include "Resource.hpp"
 
-#include "ComponentHelper.hpp"
-
 using WorldID = std::uint8_t;
 
 /**
@@ -31,9 +29,9 @@ private:
     static inline std::unordered_set<std::shared_ptr<World>> s_Worlds;      //!< All existing `World` instances. Prevents them from being moved in memory, and thus invalidating references to them
     std::unordered_map<std::type_index, std::shared_ptr<void>> m_resources; //!< Data of all `Resource`s inserted into the `World`
     ComponentID m_registeredComponents = 0;                                 //!< Number of registered components in the `World`. Used for pseudo type-checking at runtime.
-    mutable ComponentID m_nextComponentID = 0;                               //!< The next registered component will have this ID. After creation of the `World`, should be the same as `m_registeredComponents`
-    std::unordered_map<Signature, ArchetypePtr> m_archetypes;               //!< All `Archetypes` created within this `World`
-    std::unordered_map<Entity, ArchetypePtr> m_entityToArchetype;           //!< Maps entities to the `Archetype` in which they are stored
+    mutable ComponentID m_nextComponentID = 0;                              //!< The next registered component will have this ID. After creation of the `World`, should be the same as `m_registeredComponents`
+    std::unordered_map<Signature, Archetype> m_archetypes;                  //!< All `Archetypes` created within this `World`
+    std::unordered_map<Entity, EntityLocation> m_entityLocations;           //!< Maps entities to the `Archetype` in which they are stored
     /**
      * @cond TURN_OFF_DOXYGEN
      * Using a `vector` to contain the queries + an unordered_map would mean faster iteration speed
@@ -47,8 +45,8 @@ private:
     std::vector<AnyCommand> m_commandQueue;                                 //!< The queue of actions to apply. Implemented as a `vector` for iteration & clearing efficiency
     std::vector<std::shared_ptr<ISystem>> m_systems;                        //!< Contains all `System`s in this `World`, type erased
     std::queue<Entity> m_availableEntities;                                 //!< Contains all valid entities that are currently not spawned
+    std::vector<IColumn *> m_templateColumns;                               //!< Contains 1 empty `Column` of each registered component type, for `Archetype` instantiation
     bool m_ticking{false};                                                  //!< Is a world tick currently running ?
-    std::unique_ptr<IComponentHelper> m_componentHelper;                    //!< The `ComponentHelper`, which permits retrieval of component types from `Signature`s
 
     /**
      * @brief Get the `ComponentID` of a specific component type, without checking if it has been registered
@@ -74,17 +72,25 @@ private:
      * @return ArchetypePtr
      */
     template <typename... Cs>
-    Archetype<Cs...> &getArchetype();
+    Archetype &getArchetype();
 
     /**
-     * @brief Get an `Archetype` pointer from its signature
+     * @brief Get an `Archetype`reference from its signature
      *
      * @copydetails World::getArchetype()
      *
      * @param sig
      * @return ArchetypePtr
      */
-    ArchetypePtr getArchetype(const Signature &sig);
+    Archetype &getArchetype(const Signature &sig);
+
+    /**
+     * @brief Get the `Archetype` holding a specific `Entity`
+     *
+     * @param entity
+     * @return Archetype&
+     */
+    Archetype &getArchetype(Entity entity);
 
     /**
      * @brief Builds a system param from its type and returns it
@@ -119,10 +125,8 @@ private:
 
 public:
     friend Commands;
+    friend Archetype;
     friend class EntityCommands;
-
-    template <typename... Ts>
-    friend class ComponentHelper;
 
     ~World() = default;
 
@@ -233,4 +237,28 @@ public:
      */
     template <typename C>
     ComponentID getComponentID() const;
+
+    /**
+     * @brief Get a new empty `Column` holding the specified component
+     * 
+     * @param id
+     * @return IColumn* 
+     */
+    IColumn* getTemplateColumn(ComponentID id) const;
+
+    /**
+     * @brief Returns an `Entity`'s `EntityLocation`, giving information on which `Archetype` and `Row` it is stored in.
+     * 
+     * @param entity 
+     * @return EntityLocation 
+     */
+    EntityLocation& entityLocation(Entity entity);
+    
+    /**
+     * @copybrief  EntityLocation& World::entityLocation()
+     * 
+     * @param entity 
+     * @return const EntityLocation& 
+     */
+    const EntityLocation& entityLocation(Entity entity) const;
 };

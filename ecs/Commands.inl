@@ -35,7 +35,7 @@ inline EntityCommands& EntityCommands::operator=(const EntityCommands& other) {
 template <typename Component>
 inline Component *EntityCommands::getComponent()
 {
-    return m_world->m_entityToArchetype[m_entity]->get<Component>();
+    return m_world->getArchetype(m_entity).get<Component>();
 };
 
 inline EntityCommands::EntityCommands(const EntityCommands &other) : m_entity(other.m_entity), m_world(other.m_world)

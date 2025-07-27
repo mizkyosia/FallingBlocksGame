@@ -5,10 +5,10 @@
 #include <bits/shared_ptr.h>
 
 // Forward declaration
-class IArchetype;
+class Archetype;
 struct IQuery
 {
-    virtual void entityUpdated(const Entity id, const Signature &previous, const Signature &current, std::shared_ptr<IArchetype> newArchetype) = 0;
+    virtual void entityUpdated(const Entity id, const Signature &previous, const Signature &current, Archetype &newArchetype) = 0;
     virtual void entityDeleted(const Entity id) = 0;
 };
 
@@ -46,7 +46,7 @@ private:
      * @param entity A valid ID for an entity selected by this query
      */
     template <typename T>
-    static decltype(auto) fetchData(World &world, Entity entity, std::shared_ptr<IArchetype> newArchetype);
+    static decltype(auto) fetchData(World &world, Entity entity, Archetype &newArchetype);
 
     /**
      * @brief Called by the `World` when an entity is updated. The query then removes/adds the entity to its search space as needed
@@ -55,7 +55,7 @@ private:
      * @param previous Previous signature of the entity. In case the entity was just created, this is the same as `current`
      * @param current New signature of the entity after modifications
      */
-    void entityUpdated(const Entity id, const Signature &previous, const Signature &current, std::shared_ptr<IArchetype> newArchetype) override;
+    void entityUpdated(const Entity id, const Signature &previous, const Signature &current, Archetype &newArchetype) override;
     /**
      * @brief Called by the `World` whe an entity is destroyed. The query then removes the entity from its search space, if it was in it
      *
@@ -88,7 +88,7 @@ private:
      *
      * @param entity A valid ID for an entity selected by this query
      */
-    Row fetchDataRow(Entity entity, std::shared_ptr<IArchetype> newArchetype);
+    Row fetchDataRow(Entity entity, Archetype &newArchetype);
 
     Filter filter;                                    //!< Filter used in the query. May be a composite filter
     Signature signature;                              //!< Signature of the query

@@ -55,7 +55,7 @@ public:
 class EntityCommands
 {
     Entity m_entity;
-    World *&m_world;
+    World *m_world;
 
     EntityCommands(World *world, Entity entity);
 
