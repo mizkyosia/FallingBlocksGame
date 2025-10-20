@@ -1,1 +1,0 @@
-target_sources(ECS PUBLIC Data.hpp Filter.hpp Filter.inl Query.hpp Query.inl)
